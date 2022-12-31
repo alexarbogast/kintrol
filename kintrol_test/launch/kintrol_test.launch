@@ -1,0 +1,24 @@
+<launch>
+
+    <!-- kintrol parameters -->
+    <rosparam file="$(find kintrol)/kintrol_test/config/kintrol_test.yaml" command="load"/>
+
+    <!-- robot 1 -->
+    <group ns="robot1">
+        <node name="kintrol_server" pkg="kintrol" type="kintrol_server" output="screen"/>
+        <node name="trajectory_pub" pkg="kintrol" type="trajectory_pub" output="screen"/>
+    </group>
+
+    <!-- robot 2 -->
+    <group ns="robot2">
+        <node name="kintrol_server" pkg="kintrol" type="kintrol_server" output="screen"/>
+        <node name="trajectory_pub" pkg="kintrol" type="trajectory_pub" output="screen"/>
+    </group>
+
+    <!-- robot 3 -->
+    <group ns="robot3">
+        <node name="kintrol_server" pkg="kintrol" type="kintrol_server" output="screen"/>
+        <node name="trajectory_pub" pkg="kintrol" type="trajectory_pub" output="screen"/>
+    </group>
+
+</launch>
