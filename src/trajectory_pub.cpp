@@ -1,62 +1,81 @@
-#include <ros/ros.h>
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <moveit_msgs/CartesianTrajectoryPoint.h>
 
+#include "kintrol/trajectory_pub.h"
+
+static double TRAVEL_VELOCITY = 100.0 / 1000.0; // mm/s
 
 namespace kintrol
 {
-class TrajectoryPublisher
+TrajectoryPublisher::TrajectoryPublisher(ros::NodeHandle& nh)
+    : nh_(nh)
 {
-public:
-    TrajectoryPublisher(ros::NodeHandle& nh)
-        : nh_(nh)
+    std::string setpoint_topic;
+    size_t ros_queue_size;
+
+    ros::NodeHandle rpnh(nh_, "kintrol_server");
+    rosparam_shortcuts::get("/kintrol_server", rpnh, "setpoint_topic", setpoint_topic);
+    rosparam_shortcuts::get("/kintrol_server", rpnh, "control_freq", control_freq_);
+    rosparam_shortcuts::get("/kintrol_server", rpnh, "ros_queue_size", ros_queue_size);
+
+    // setpoint_pub_ = nh_.advertise<geometry_msgs::TwistStamped>(setpoint_topic, ros_queue_size);
+    setpoint_pub_ = nh_.advertise<moveit_msgs::CartesianTrajectoryPoint>(setpoint_topic, ros_queue_size);
+
+    // create path
+    EigenSTL::vector_Vector3d segments;
+    segments.emplace_back(0.0, 0.0, 0.0);
+    segments.emplace_back(0.0, 0.3, 0.0);
+    segments.emplace_back(0.3, 0.3, 0.0);
+    segments.emplace_back(0.3, -0.3, 0.0);
+    segments.emplace_back(0.0, -0.3, 0.0);
+    segments.emplace_back(0.0, 0.0, 0.0);
+
+    path_.segments = segments;
+    path_.reset_pointer();
+    path_.find_times(TRAVEL_VELOCITY);
+}
+
+void TrajectoryPublisher::run()
+{
+    ros::Rate rate(control_freq_);
+    //geometry_msgs::TwistStamped msg;
+    moveit_msgs::CartesianTrajectoryPoint msg;
+
+    auto& current_segment = path_.current_segment;
+    auto elapsed_cache = path_.elapsed.begin();
+
+    Eigen::Vector3d direction = *current_segment - *std::prev(current_segment);
+
+    double segment_elapsed = 0.0;
+    double previous = ros::Time::now().toSec();
+    while (current_segment < path_.segments.end())
     {
-        std::string setpoint_topic;
-        size_t ros_queue_size;
+        segment_elapsed +=ros::Time::now().toSec() - previous;
+        previous = ros::Time::now().toSec();
 
-        ros::NodeHandle rpnh(nh_, "kintrol_server");
-        rosparam_shortcuts::get("/kintrol_server", rpnh, "setpoint_topic", setpoint_topic);
-        rosparam_shortcuts::get("/kintrol_server", rpnh, "control_freq", control_freq_);
-        rosparam_shortcuts::get("/kintrol_server", rpnh, "ros_queue_size", ros_queue_size);
-        
-        setpoint_pub_ = nh_.advertise<geometry_msgs::TwistStamped>(setpoint_topic, ros_queue_size);
-    }
-
-    void run()
-    {
-        ros::Rate rate(control_freq_);
-        geometry_msgs::TwistStamped msg;
-
-        while (ros::ok())
+        if (segment_elapsed >=  *elapsed_cache)
         {
-            msg.twist.linear.y = 0.1;
-            msg.twist.linear.z = 0.1;
+            ++current_segment;
+            ++elapsed_cache;
 
-            setpoint_pub_.publish(msg);
-            rate.sleep();
+            direction = *current_segment - *std::prev(current_segment);
+            segment_elapsed = 0.0;
         }
+
+        auto velocity_vector = direction / direction.norm() * TRAVEL_VELOCITY;
+        msg.point.velocity.linear.x = velocity_vector.x();
+        msg.point.velocity.linear.y = velocity_vector.y();
+        msg.point.velocity.linear.z = velocity_vector.z();
+
+        setpoint_pub_.publish(msg);
+        rate.sleep();
     }
 
-private:
-    ros::NodeHandle nh_;
-    ros::Publisher setpoint_pub_;
-
-    double control_freq_;
-};
+    msg.point.velocity.linear.x = 0.0;
+    msg.point.velocity.linear.y = 0.0;
+    msg.point.velocity.linear.z = 0.0;
+    setpoint_pub_.publish(msg);
+}
 
 } // namespace kintrol
-
-int main(int argc, char** argv)
-{
-    ros::init(argc, argv, "trajectory_pub");
-    ros::AsyncSpinner spinner(1);
-    spinner.start();
-
-    ros::NodeHandle nh;
-
-    kintrol::TrajectoryPublisher traj_pub(nh);
-    traj_pub.run();
-
-    ros::waitForShutdown();
-    return 0;
-}

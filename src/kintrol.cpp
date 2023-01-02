@@ -1,16 +1,10 @@
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
 #include <std_msgs/Float64MultiArray.h>
+
 #include "kintrol/kintrol.h"
 
-// parameters
-//static std::string COMMAND_TOPIC = "/robot1_joint_velocity_controller/command";
-//static std::string SETPOINT_TOPIC = "setpoint";
-//static double CONTROL_FREQ = 250;
-//static std::string JOINT_MODEL_GROUP = "rob1_planning_group";
-//static size_t ROS_QUEUE_SIZE = 2;
 
 static std::string JOINT_TOPIC = "joint_states";
-static std::string ATTATCHED_COLLISION_OBJECT ="attached_collision_object";
 static double ROBOT_STATE_WAIT_TIME = 10.0; // seconds
 
 static std::string LOGNAME = "kintrol_server";
@@ -20,8 +14,6 @@ namespace kintrol
 Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningSceneMonitorPtr& planning_scene_monitor)
     : pnh_(nh), planning_scene_monitor_(planning_scene_monitor)
 {
-    //nh_ ;
-    
     if (!readParameters())
     {
         ROS_ERROR("Failed to inialize kintrol parameters");
@@ -29,7 +21,7 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
 
     if (!planning_scene_monitor_->getStateMonitor())
     {
-        planning_scene_monitor_->startStateMonitor("/" + JOINT_TOPIC, "/" + ATTATCHED_COLLISION_OBJECT);
+        planning_scene_monitor_->startStateMonitor("/" + JOINT_TOPIC);
     }
     planning_scene_monitor_->getStateMonitor()->enableCopyDynamics(true);
 
@@ -54,22 +46,22 @@ void Kintrol::run()
     std_msgs::Float64MultiArray msg;
     
     Eigen::VectorXd vel(6);
-    vel << setpoint_.twist.linear.x, 
-           setpoint_.twist.linear.y,
-           setpoint_.twist.linear.z,
-           setpoint_.twist.angular.x,
-           setpoint_.twist.angular.y,
-           setpoint_.twist.angular.z; 
+    vel << setpoint_.point.velocity.linear.x, 
+           setpoint_.point.velocity.linear.y,
+           setpoint_.point.velocity.linear.z,
+           setpoint_.point.velocity.angular.x,
+           setpoint_.point.velocity.angular.y,
+           setpoint_.point.velocity.angular.z; 
 
 
     while (ros::ok())
     {
-        vel << setpoint_.twist.linear.x, 
-               setpoint_.twist.linear.y,
-               setpoint_.twist.linear.z,
-               setpoint_.twist.angular.x,
-               setpoint_.twist.angular.y,
-               setpoint_.twist.angular.z;  
+        vel << setpoint_.point.velocity.linear.x, 
+               setpoint_.point.velocity.linear.y,
+               setpoint_.point.velocity.linear.z,
+               setpoint_.point.velocity.angular.x,
+               setpoint_.point.velocity.angular.y,
+               setpoint_.point.velocity.angular.z; 
 
         current_state_ = planning_scene_monitor_->getStateMonitor()->getCurrentState();
         Eigen::MatrixXd jacobian = current_state_->getJacobian(joint_model_group_);
@@ -81,50 +73,10 @@ void Kintrol::run()
         Eigen::VectorXd::Map(&output[0], cmd.size()) = cmd;
 
         msg.data = output;
-
-        std::cout << msg << std::endl;
-
         command_pub_.publish(msg);
         rate.sleep();
     }
 
-}
-
-void Kintrol::run_old()
-{
-    ros::Rate rate(parameters_.control_freq);
-
-    std::vector<double> q(6, 0.0);
-    std_msgs::Float64MultiArray msg;
-    
-    Eigen::VectorXd vel(6);
-    vel << 0., 0.1, 0.1, 0., 0., 0.;
-    vel << setpoint_.twist.linear.x, 
-           setpoint_.twist.linear.y,
-           setpoint_.twist.linear.z,
-           0., 0., 0.; 
-
-    while (ros::ok())
-    {
-        vel << setpoint_.twist.linear.x, 
-               setpoint_.twist.linear.y,
-               setpoint_.twist.linear.z,
-               0., 0., 0.; 
-
-        current_state_ = planning_scene_monitor_->getStateMonitor()->getCurrentState();
-        Eigen::MatrixXd jacobian = current_state_->getJacobian(joint_model_group_);
-        Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        Eigen::MatrixXd sigma = svd.singularValues().asDiagonal();
-        Eigen::MatrixXd psuedo_inverse = svd.matrixV() * sigma.inverse() * svd.matrixU().transpose();
-
-        Eigen::VectorXd cmd = psuedo_inverse * vel;
-        std::vector<double> output(6);
-        Eigen::VectorXd::Map(&output[0], 6) = cmd;
-
-        msg.data = output;
-        command_pub_.publish(msg);
-        rate.sleep();
-    }
 }
 
 bool Kintrol::readParameters()
@@ -148,7 +100,7 @@ void Kintrol::psuedoInverseJacobian(const Eigen::MatrixXd& jacobian, Eigen::Matr
     inverse = svd.matrixV() * sigma.inverse() * svd.matrixU().transpose();
 }
 
-void Kintrol::twistStampedCB(const geometry_msgs::TwistStampedConstPtr& msg)
+void Kintrol::twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr& msg)
 {
     setpoint_ = *msg;
 }

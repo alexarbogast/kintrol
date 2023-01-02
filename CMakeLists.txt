@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
     moveit_ros_planning_interface
     ros_control_boilerplate
     geometry_msgs
+    moveit_msgs
     std_msgs
 )
 
@@ -12,6 +13,7 @@ catkin_package(CATKIN_DEPENDS
     moveit_ros_planning_interface
     ros_control_boilerplate
     geometry_msgs
+    moveit_msgs
     std_msgs
 )
 
@@ -39,5 +41,5 @@ target_link_libraries(top_level_node ${catkin_LIBRARIES})
 add_executable(kintrolV2 src/kintrolV2.cpp)
 target_link_libraries(kintrolV2 ${catkin_LIBRARIES})
 
-add_executable(trajectory_pub src/trajectory_pub.cpp)
+add_executable(trajectory_pub src/trajectory_pub.cpp src/trajectory_pub_node.cpp)
 target_link_libraries(trajectory_pub ${catkin_LIBRARIES})
