@@ -12,6 +12,8 @@ struct KintrolParameters
     std::string setpoint_topic;
     double control_freq;
     std::string joint_model_group;
+    std::string end_effector;
+    std::string base_frame;
 
     size_t ros_queue_size;
 };
@@ -26,6 +28,8 @@ private:
     void twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr& msg);
 
     bool readParameters();
+    inline void extractPosition(Eigen::VectorXd& pose);
+    inline void extractVelocity(Eigen::VectorXd& pose);
     inline void psuedoInverseJacobian(const Eigen::MatrixXd& jacobian, Eigen::MatrixXd& inverse);
 private:
     KintrolParameters parameters_;

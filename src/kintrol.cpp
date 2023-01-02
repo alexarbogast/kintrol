@@ -45,25 +45,21 @@ void Kintrol::run()
     
     std_msgs::Float64MultiArray msg;
     
-    Eigen::VectorXd vel(6);
-    vel << setpoint_.point.velocity.linear.x, 
-           setpoint_.point.velocity.linear.y,
-           setpoint_.point.velocity.linear.z,
-           setpoint_.point.velocity.angular.x,
-           setpoint_.point.velocity.angular.y,
-           setpoint_.point.velocity.angular.z; 
-
+    Eigen::VectorXd vel(6); 
+    Eigen::VectorXd pose(3);
+    extractVelocity(vel);
+    extractPosition(pose);
 
     while (ros::ok())
     {
-        vel << setpoint_.point.velocity.linear.x, 
-               setpoint_.point.velocity.linear.y,
-               setpoint_.point.velocity.linear.z,
-               setpoint_.point.velocity.angular.x,
-               setpoint_.point.velocity.angular.y,
-               setpoint_.point.velocity.angular.z; 
+        extractVelocity(vel);
+        extractPosition(pose);
 
         current_state_ = planning_scene_monitor_->getStateMonitor()->getCurrentState();
+        auto eef_frame = current_state_->getFrameTransform(parameters_.end_effector);
+        auto base_frame = current_state_->getFrameTransform(parameters_.base_frame);
+        eef_frame = base_frame.inverse() * eef_frame;
+
         Eigen::MatrixXd jacobian = current_state_->getJacobian(joint_model_group_);
         Eigen::MatrixXd psuedo_inverse;
         psuedoInverseJacobian(jacobian, psuedo_inverse);
@@ -76,7 +72,6 @@ void Kintrol::run()
         command_pub_.publish(msg);
         rate.sleep();
     }
-
 }
 
 bool Kintrol::readParameters()
@@ -86,11 +81,30 @@ bool Kintrol::readParameters()
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "command_topic", parameters_.command_topic);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "control_freq", parameters_.control_freq);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "joint_model_group", parameters_.joint_model_group);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "end_effector", parameters_.end_effector);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "base_frame", parameters_.base_frame);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "ros_queue_size", parameters_.ros_queue_size);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "setpoint_topic", parameters_.setpoint_topic);
 
     rosparam_shortcuts::shutdownIfError(LOGNAME, error);
     return true;
+}
+
+void Kintrol::extractPosition(Eigen::VectorXd& pose)
+{
+    pose << setpoint_.point.pose.position.x,
+            setpoint_.point.pose.position.y,
+            setpoint_.point.pose.position.z;
+}
+
+void Kintrol::extractVelocity(Eigen::VectorXd& vel)
+{
+    vel << setpoint_.point.velocity.linear.x, 
+           setpoint_.point.velocity.linear.y,
+           setpoint_.point.velocity.linear.z,
+           setpoint_.point.velocity.angular.x,
+           setpoint_.point.velocity.angular.y,
+           setpoint_.point.velocity.angular.z;
 }
 
 void Kintrol::psuedoInverseJacobian(const Eigen::MatrixXd& jacobian, Eigen::MatrixXd& inverse)
@@ -100,6 +114,7 @@ void Kintrol::psuedoInverseJacobian(const Eigen::MatrixXd& jacobian, Eigen::Matr
     inverse = svd.matrixV() * sigma.inverse() * svd.matrixU().transpose();
 }
 
+/* Callbacks */
 void Kintrol::twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr& msg)
 {
     setpoint_ = *msg;

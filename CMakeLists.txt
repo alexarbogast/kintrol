@@ -4,18 +4,40 @@ project(kintrol)
 find_package(catkin REQUIRED COMPONENTS
     moveit_ros_planning_interface
     ros_control_boilerplate
+    eigen_conversions
+    actionlib
+    actionlib_msgs
+    message_generation
     geometry_msgs
     moveit_msgs
+    std_msgs
+)
+
+add_action_files(
+    DIRECTORY action
+    FILES TrajectoryExecution.action
+)
+
+generate_messages(
+  DEPENDENCIES 
+    actionlib_msgs
+    geometry_msgs
     std_msgs
 )
 
 catkin_package(CATKIN_DEPENDS
     moveit_ros_planning_interface
     ros_control_boilerplate
+    eigen_conversions
+    actionlib
+    actionlib_msgs
+    message_generation
+    message_runtime
     geometry_msgs
     moveit_msgs
     std_msgs
 )
+
 
 include_directories(include)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS})
@@ -29,6 +51,10 @@ target_link_libraries(kintroller_manager ${catkin_LIBRARIES})
 add_executable(kintrol_server src/kintrol_server.cpp)
 target_link_libraries(kintrol_server kintrol)
 
+add_executable(trajectory_execution_server src/trajectory_execution_server.cpp)
+target_link_libraries(trajectory_execution_server ${catkin_LIBRARIES})
+add_dependencies(trajectory_execution_server ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
 add_subdirectory(kintrol_test)
 
 # TEMPORARY
@@ -41,5 +67,6 @@ target_link_libraries(top_level_node ${catkin_LIBRARIES})
 add_executable(kintrolV2 src/kintrolV2.cpp)
 target_link_libraries(kintrolV2 ${catkin_LIBRARIES})
 
-add_executable(trajectory_pub src/trajectory_pub.cpp src/trajectory_pub_node.cpp)
-target_link_libraries(trajectory_pub ${catkin_LIBRARIES})
+#add_executable(trajectory_pub src/trajectory_pub.cpp src/trajectory_pub_node.cpp)
+#target_link_libraries(trajectory_pub ${catkin_LIBRARIES})
+#add_dependencies(trajectory_pub ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})

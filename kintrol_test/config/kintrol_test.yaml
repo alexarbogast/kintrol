@@ -4,6 +4,8 @@ robot1:
     setpoint_topic: "setpoint"
     control_freq: 250
     joint_model_group: "rob1_planning_group"
+    end_effector: "rob1_typhoon_extruder"
+    base_frame: "positioner"
 
     ros_queue_size: 2
 
@@ -13,6 +15,8 @@ robot2:
     setpoint_topic: "setpoint"
     control_freq: 250
     joint_model_group: "rob2_planning_group"
+    end_effector: "rob2_typhoon_extruder"
+    base_frame: "positioner"
 
     ros_queue_size: 2
 
@@ -22,5 +26,7 @@ robot3:
     setpoint_topic: "setpoint"
     control_freq: 250
     joint_model_group: "rob3_planning_group"
+    end_effector: "rob3_typhoon_extruder"
+    base_frame: "positioner"
 
     ros_queue_size: 2

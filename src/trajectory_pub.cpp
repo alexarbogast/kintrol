@@ -39,7 +39,6 @@ TrajectoryPublisher::TrajectoryPublisher(ros::NodeHandle& nh)
 void TrajectoryPublisher::run()
 {
     ros::Rate rate(control_freq_);
-    //geometry_msgs::TwistStamped msg;
     moveit_msgs::CartesianTrajectoryPoint msg;
 
     auto& current_segment = path_.current_segment;
@@ -51,7 +50,7 @@ void TrajectoryPublisher::run()
     double previous = ros::Time::now().toSec();
     while (current_segment < path_.segments.end())
     {
-        segment_elapsed +=ros::Time::now().toSec() - previous;
+        segment_elapsed += ros::Time::now().toSec() - previous;
         previous = ros::Time::now().toSec();
 
         if (segment_elapsed >=  *elapsed_cache)
@@ -62,6 +61,12 @@ void TrajectoryPublisher::run()
             direction = *current_segment - *std::prev(current_segment);
             segment_elapsed = 0.0;
         }
+
+        double perc_elapsed = segment_elapsed/(*elapsed_cache);
+        auto position = *std::prev(current_segment) + perc_elapsed * direction;
+        msg.point.pose.position.x = position.x();        
+        msg.point.pose.position.y = position.y();
+        msg.point.pose.position.z = position.z();       
 
         auto velocity_vector = direction / direction.norm() * TRAVEL_VELOCITY;
         msg.point.velocity.linear.x = velocity_vector.x();
@@ -78,4 +83,28 @@ void TrajectoryPublisher::run()
     setpoint_pub_.publish(msg);
 }
 
+void TrajectoryPublisher::findSetpoint()
+{
+
+}
+
 } // namespace kintrol
+
+TrajectoryExecutionAction::TrajectoryExecutionAction(std::string name)
+    : as_(nh_, name, boost::bind(&TrajectoryExecutionAction::executeCB, this, _1), false),
+      action_name(name)
+{
+    as_.registerPreemptCallback(boost::bind(&TrajectoryExecutionAction::preemptCB, this));
+    as_.start();
+}
+
+void TrajectoryExecutionAction::preemptCB()
+{
+
+}
+
+void TrajectoryExecutionAction::executeCB(const kintrol::TrajectoryExecutionGoalConstPtr& goal)
+{
+    if (!as_.isActive() || as_.isPreemptRequested()) return;
+
+}
