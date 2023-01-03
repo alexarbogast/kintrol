@@ -38,7 +38,6 @@ catkin_package(CATKIN_DEPENDS
     std_msgs
 )
 
-
 include_directories(include)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS})
 
@@ -60,13 +59,3 @@ add_subdirectory(kintrol_test)
 # TEMPORARY
 add_executable(my_test src/my_test.cpp)
 target_link_libraries(my_test ${catkin_LIBRARIES})
-
-add_executable(top_level_node src/top_level_node.cpp)
-target_link_libraries(top_level_node ${catkin_LIBRARIES})
-
-add_executable(kintrolV2 src/kintrolV2.cpp)
-target_link_libraries(kintrolV2 ${catkin_LIBRARIES})
-
-#add_executable(trajectory_pub src/trajectory_pub.cpp src/trajectory_pub_node.cpp)
-#target_link_libraries(trajectory_pub ${catkin_LIBRARIES})
-#add_dependencies(trajectory_pub ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
