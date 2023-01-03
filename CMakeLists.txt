@@ -58,8 +58,8 @@ add_dependencies(trajectory_execution_server ${catkin_EXPORTED_TARGETS} ${${PROJ
 add_subdirectory(kintrol_test)
 
 # TEMPORARY
-add_executable(multi_robot_traj_test src/multi_robot_trajectory_test.cpp)
-target_link_libraries(multi_robot_traj_test ${catkin_LIBRARIES})
+add_executable(my_test src/my_test.cpp)
+target_link_libraries(my_test ${catkin_LIBRARIES})
 
 add_executable(top_level_node src/top_level_node.cpp)
 target_link_libraries(top_level_node ${catkin_LIBRARIES})

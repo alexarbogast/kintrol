@@ -8,7 +8,7 @@
 #include "kintrol/TrajectoryExecutionAction.h"
 
 static const std::string ACTION_NAME = "trajectory_execution_action";
-static double TRAVEL_VELOCITY = 100.0 / 1000.0; // mm/s
+static double TRAVEL_VELOCITY = 200.0 / 1000.0; // m/s
 
 class TrajectoryExecutionAction
 {
@@ -62,6 +62,7 @@ private:
 
         double segment_elapsed = 0.0;
         double previous = ros::Time::now().toSec();
+        
         while (current_segment < path.end())
         {
             segment_elapsed += ros::Time::now().toSec() - previous;
@@ -71,6 +72,9 @@ private:
             {
                 ++current_segment;
                 
+                if (current_segment == path.end())
+                    continue;
+
                 tf::poseMsgToEigen(*current_segment, end_pose);
                 tf::poseMsgToEigen(*std::prev(current_segment), start_pose);
                 
@@ -93,6 +97,10 @@ private:
             setpoint_pub_.publish(msg);
             rate.sleep();
         }
+
+        msg.point.pose.position.x = end_pose.translation().x();        
+        msg.point.pose.position.y = end_pose.translation().y();
+        msg.point.pose.position.z = end_pose.translation().z();  
 
         msg.point.velocity.linear.x = 0.0;
         msg.point.velocity.linear.y = 0.0;

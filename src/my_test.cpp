@@ -1,22 +1,123 @@
-#include <iostream>
-#include <Eigen/Dense>
-#include <Eigen/SVD>
+#include <ros/ros.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 
-int main()
+typedef std::vector<const robot_model::JointModel*> JointModelChain;
+
+void getKinematicChain(const robot_model::RobotModelConstPtr& robot_model, 
+                       const std::string& end_frame,
+                       const std::string& start_frame,
+                       JointModelChain& jmc)
 {
-    Eigen::MatrixXd m(6, 6);
+    const robot_model::JointModelGroup* jmg = robot_model->getJointModelGroup("hydra_planning_group");
+    const robot_model::LinkModel* end_link = robot_model->getLinkModel(end_frame);
+    const robot_model::LinkModel* start_link = robot_model->getLinkModel(start_frame);
 
-    m <<      0, 0.0576279, -0.334086, 0.000841471,       0, 0,
-        0.62812,         0,         0,  -0.0988728,       0, 0,
-              0,  -0.60312, -0.373608, 0.000540302, -0.1175, 0,
-              0,         0,         0,    0.540302,       0, 1,
-              0,         1,         1,           0,       1, 0,
-              1,         0,         0,   -0.841471,       0, 0;
+    std::vector<std::string> end_link_names;
+    std::vector<std::string> start_link_names;
+    while (end_link)
+    {
+        end_link_names.push_back(end_link->getName());
+        end_link = end_link->getParentLinkModel();
+    }
 
+    while (start_link)
+    {
+        start_link_names.push_back(start_link->getName());
+        start_link = start_link->getParentLinkModel();
+    }
+
+    std::vector<std::string>::iterator start_link_it = --start_link_names.end();
+    std::vector<std::string>::iterator end_link_it = --end_link_names.end();
     
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(m, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::MatrixXd sigma = svd.singularValues().asDiagonal();
-    Eigen::MatrixXd psuedo_inverse = svd.matrixV() * sigma.inverse() * svd.matrixU().transpose();
+    for (; start_link_it != start_link_names.begin(); start_link_it--)
+    {
 
-    std::cout << psuedo_inverse << std::endl;
+        if (*std::prev(start_link_it) == *std::prev(end_link_it))
+        {
+            start_link_names.erase(start_link_it);
+            end_link_names.erase(end_link_it);
+        }
+        else
+        {
+            // leave one common root
+            start_link_names.erase(start_link_it);
+            break;
+        }
+        end_link_it--;
+    }
+
+    std::vector<std::string> frame_chain;
+    frame_chain.reserve(start_link_names.size() + end_link_names.size());
+    frame_chain.insert(frame_chain.end(), start_link_names.begin(), start_link_names.end());
+    frame_chain.insert(frame_chain.end(), end_link_names.rbegin(), end_link_names.rend());
+
+    for (std::string& link_name : frame_chain)
+    {
+        const robot_model::LinkModel* link_model = robot_model->getLinkModel(link_name);
+        const robot_model::JointModel* pjm = link_model->getParentJointModel();
+
+        if (pjm->getVariableCount() > 0)
+            jmc.emplace_back(pjm);
+    }
+}
+
+void getJacobian(robot_state::RobotStatePtr& state,
+                 const std::string& end_frame,
+                 const std::string& start_frame,
+                 Eigen::MatrixXd& jacobian)
+{
+    auto& robot_model = state->getRobotModel();
+
+    JointModelChain jmc;
+    getKinematicChain(robot_model, end_frame, start_frame, jmc);
+
+    const robot_model::LinkModel* end_link = robot_model->getLinkModel(end_frame);
+    const robot_model::LinkModel* start_link = robot_model->getLinkModel(start_frame);
+
+    Eigen::Isometry3d reference_transform =
+        start_link ? state->getGlobalLinkTransform(start_link).inverse() : Eigen::Isometry3d::Identity(); // T_base_world
+    int rows = 6;
+    int columns = jmc.size();
+    jacobian = Eigen::MatrixXd::Zero(rows, columns);
+
+    Eigen::Isometry3d link_transform = reference_transform * state->getGlobalLinkTransform(end_link);
+    Eigen::Vector3d point_transform = link_transform.translation();
+    
+    Eigen::Vector3d joint_axis; 
+    Eigen::Isometry3d joint_transform;    
+
+    unsigned int joint_index = 0;
+    for (const auto& joint_model : jmc)
+    {
+        if (joint_model->getType() == robot_model::JointModel::REVOLUTE)
+        {
+            const std::string& link_name = joint_model->getChildLinkModel()->getName();
+            joint_transform = reference_transform * state->getGlobalLinkTransform(link_name);
+            joint_axis = joint_transform.rotation() * 
+                         static_cast<const robot_model::RevoluteJointModel*>(joint_model)->getAxis();
+
+            jacobian.block<3, 1>(0, joint_index) = 
+                jacobian.block<3, 1>(0, joint_index) + joint_axis.cross(point_transform - joint_transform.translation());
+            jacobian.block<3, 1>(3, joint_index) = jacobian.block<3, 1>(3, joint_index) + joint_axis;
+        }
+        joint_index++;
+    }
+}
+
+int main(int argc, char** argv)
+{
+    ros::init(argc, argv, "my_test");
+    ros::AsyncSpinner spinner(1);
+    spinner.start();
+
+    moveit::planning_interface::MoveGroupInterface move_group_interface_("hydra_planning_group");
+    robot_model::RobotStatePtr state = move_group_interface_.getCurrentState();
+
+    const std::string start_frame = "positioner";
+    const std::string end_frame = "rob1_tool0";
+
+    Eigen::MatrixXd jacobian; 
+    getJacobian(state, end_frame, start_frame, jacobian);
+
+    std::cout << jacobian << std::endl;
 }
