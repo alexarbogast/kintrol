@@ -7,9 +7,7 @@
 static std::string JOINT_TOPIC = "joint_states";
 static double ROBOT_STATE_WAIT_TIME = 10.0; // seconds
 
-static std::string LOGNAME = "kintrol_server";
-
-static const double PROP_GAIN = 0.1;
+const static std::string LOGNAME = "kintrol_server";
 
 namespace kintrol
 {
@@ -35,11 +33,14 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
 
     current_state_ = planning_scene_monitor->getStateMonitor()->getCurrentState();
     joint_model_group_ = current_state_->getJointModelGroup(parameters_.joint_model_group);
+    n_variables_ = joint_model_group_->getVariableCount();
 
     getKinematicChain(current_state_->getRobotModel(), 
+                      parameters_.pose_frame,
                       parameters_.end_effector,
-                      parameters_.pose_frame);
+                      kinematic_chain_);
 
+    kintroller_ = std::make_unique<kintrollers::Kintroller>(parameters_, kinematic_chain_);
     setIdleSetpoint();
 
     // publish command signal for ros control
@@ -64,9 +65,6 @@ void Kintrol::run()
     Eigen::Isometry3d base_frame = current_state_->getFrameTransform(base_frame_name);
     Eigen::Isometry3d pose_frame = current_state_->getFrameTransform(parameters_.pose_frame);
 
-    std::cout << base_frame.translation() << std::endl;
-    std::cout << pose_frame.translation() << std::endl;
-
     Eigen::Isometry3d base_to_pose = pose_frame.inverse() * base_frame;
 
     while (ros::ok())
@@ -78,15 +76,14 @@ void Kintrol::run()
         Eigen::Isometry3d eef_frame = current_state_->getFrameTransform(parameters_.end_effector);
         eef_frame = pose_frame.inverse() * eef_frame;
 
-        auto pose_error = PROP_GAIN * (pose - eef_frame.translation());
+        auto pose_error = parameters_.prop_gain * (pose - eef_frame.translation());
 
         vel[0] += pose_error.x();
         vel[1] += pose_error.y();
         vel[2] += pose_error.z();
 
-        //Eigen::MatrixXd jacobian = current_state_->getJacobian(joint_model_group_);
         Eigen::MatrixXd jacobian;
-        getJacobian(current_state_, parameters_.end_effector, parameters_.pose_frame, jacobian);
+        getJacobian(current_state_, kinematic_chain_, jacobian);
         Eigen::MatrixXd psuedo_inverse;
         psuedoInverseJacobian(jacobian, psuedo_inverse);
 
@@ -100,17 +97,39 @@ void Kintrol::run()
     }
 }
 
+void Kintrol::run2()
+{
+    ros::Rate rate(parameters_.control_freq);
+    std_msgs::Float64MultiArray msg;
+
+    while (ros::ok())
+    {
+        Eigen::VectorXd cmd_out(n_variables_);
+        current_state_ = planning_scene_monitor_->getStateMonitor()->getCurrentState();
+        
+        kintroller_->update(setpoint_, current_state_, cmd_out);
+
+        std::vector<double> output(n_variables_);
+        Eigen::VectorXd::Map(&output[0], cmd_out.size()) = cmd_out;
+
+        msg.data = output;
+        command_pub_.publish(msg);
+        rate.sleep();
+    }
+}
+
 bool Kintrol::readParameters()
 {
     std::size_t error = 0;
 
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "command_topic", parameters_.command_topic);
-    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "control_freq", parameters_.control_freq);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "setpoint_topic", parameters_.setpoint_topic);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "joint_model_group", parameters_.joint_model_group);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "end_effector", parameters_.end_effector);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "pose_frame", parameters_.pose_frame);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "control_freq", parameters_.control_freq);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "prop_gain", parameters_.prop_gain);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "ros_queue_size", parameters_.ros_queue_size);
-    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "setpoint_topic", parameters_.setpoint_topic);
 
     rosparam_shortcuts::shutdownIfError(LOGNAME, error);
     return true;
@@ -150,112 +169,6 @@ void Kintrol::extractVelocity(Eigen::VectorXd& vel)
            setpoint_.point.velocity.angular.x,
            setpoint_.point.velocity.angular.y,
            setpoint_.point.velocity.angular.z;
-}
-
-// this can be seperated into another file
-void Kintrol::getJacobian(robot_state::RobotStatePtr& state,
-                          const std::string& end_frame, 
-                          const std::string& start_frame,
-                          Eigen::MatrixXd& jacobian)
-{
-    auto& robot_model = state->getRobotModel();
-
-    const robot_model::LinkModel* end_link = robot_model->getLinkModel(end_frame);
-    const robot_model::LinkModel* start_link = robot_model->getLinkModel(start_frame);
-
-    Eigen::Isometry3d reference_transform =
-        start_link ? state->getGlobalLinkTransform(start_link).inverse() : Eigen::Isometry3d::Identity(); // T_base_world
-    int rows = 6;
-    int columns = joint_model_chain_.size();
-    jacobian = Eigen::MatrixXd::Zero(rows, columns);
-
-    Eigen::Isometry3d link_transform = reference_transform * state->getGlobalLinkTransform(end_link);
-    Eigen::Vector3d point_transform = link_transform.translation();
-    
-    Eigen::Vector3d joint_axis; 
-    Eigen::Isometry3d joint_transform;    
-
-    unsigned int joint_index = 0;
-    for (const auto& joint_model : joint_model_chain_)
-    {
-        if (joint_model->getType() == robot_model::JointModel::REVOLUTE)
-        {
-            const std::string& link_name = joint_model->getChildLinkModel()->getName();
-            joint_transform = reference_transform * state->getGlobalLinkTransform(link_name);
-            joint_axis = joint_transform.rotation() * 
-                         static_cast<const robot_model::RevoluteJointModel*>(joint_model)->getAxis();
-
-            jacobian.block<3, 1>(0, joint_index) = 
-                jacobian.block<3, 1>(0, joint_index) + joint_axis.cross(point_transform - joint_transform.translation());
-            jacobian.block<3, 1>(3, joint_index) = jacobian.block<3, 1>(3, joint_index) + joint_axis;
-        }
-        joint_index++;
-    }
-}
-
-void Kintrol::getKinematicChain(const robot_model::RobotModelConstPtr& robot_model, 
-                                const std::string& end_frame,
-                                const std::string& start_frame)
-{
-    joint_model_chain_.clear();
-
-    const robot_state::LinkModel* end_link = robot_model->getLinkModel(end_frame);
-    const robot_state::LinkModel* start_link = robot_model->getLinkModel(start_frame);
-
-    std::vector<std::string> end_link_names;
-    std::vector<std::string> start_link_names;
-    while (end_link)
-    {
-        end_link_names.push_back(end_link->getName());
-        end_link = end_link->getParentLinkModel();
-    }
-
-    while (start_link)
-    {
-        start_link_names.push_back(start_link->getName());
-        start_link = start_link->getParentLinkModel();
-    }
-    
-    std::vector<std::string>::iterator start_link_it = --start_link_names.end();
-    std::vector<std::string>::iterator end_link_it = --end_link_names.end();
-    
-    for (; start_link_it != start_link_names.begin(); start_link_it--)
-    {
-
-        if (*std::prev(start_link_it) == *std::prev(end_link_it))
-        {
-            start_link_names.erase(start_link_it);
-            end_link_names.erase(end_link_it);
-        }
-        else
-        {
-            // leave one common root
-            start_link_names.erase(start_link_it);
-            break;
-        }
-        end_link_it--;
-    }
-
-    std::vector<std::string> frame_chain;
-    frame_chain.reserve(start_link_names.size() + end_link_names.size());
-    frame_chain.insert(frame_chain.end(), start_link_names.begin(), start_link_names.end());
-    frame_chain.insert(frame_chain.end(), end_link_names.rbegin(), end_link_names.rend());
-
-    for (std::string& link_name : frame_chain)
-    {
-        const robot_model::LinkModel* link_model = robot_model->getLinkModel(link_name);
-        const robot_model::JointModel* pjm = link_model->getParentJointModel();
-
-        if (pjm->getVariableCount() > 0)
-            joint_model_chain_.emplace_back(pjm);
-    }
-}
-
-void Kintrol::psuedoInverseJacobian(const Eigen::MatrixXd& jacobian, Eigen::MatrixXd& inverse)
-{
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian,  Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::MatrixXd sigma = svd.singularValues().asDiagonal();
-    inverse = svd.matrixV() * sigma.inverse() * svd.matrixU().transpose();
 }
 
 /* Callbacks */

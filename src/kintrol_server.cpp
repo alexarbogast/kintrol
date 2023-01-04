@@ -13,7 +13,7 @@ int main(int argc, char** argv)
     auto planning_scene_monitor = std::make_shared<planning_scene_monitor::PlanningSceneMonitor>("robot_description");
 
     kintrol::Kintrol kintrol(nh, planning_scene_monitor);
-    kintrol.run();
+    kintrol.run2();
 
     ros::waitForShutdown();
     return 0;

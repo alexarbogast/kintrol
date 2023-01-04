@@ -41,7 +41,7 @@ catkin_package(CATKIN_DEPENDS
 include_directories(include)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS})
 
-add_library(kintrol src/kintrol.cpp)
+add_library(kintrol src/kintrol.cpp src/kinematic_utilities.cpp src/kintrollers/kintroller.cpp)
 target_link_libraries(kintrol ${catkin_LIBRARIES})
 
 add_library(kintroller_manager src/kintroller_manager.cpp)
