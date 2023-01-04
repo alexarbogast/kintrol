@@ -24,4 +24,7 @@
         <node name="kintrol_server" pkg="kintrol" type="kintrol_server"/>
     </group>
 
+    <!-- positioner -->
+    <node name="temp_pos_controller" pkg="kintrol" type="temp_pos_controller"/>
+
 </launch>

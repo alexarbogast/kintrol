@@ -99,9 +99,10 @@ void getJacobian(const robot_state::RobotStatePtr& state, const KinematicChain& 
 
 void psuedoInverseJacobian(const Eigen::MatrixXd& jacobian, Eigen::MatrixXd& inverse)
 {
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian,  Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd = Eigen::JacobiSVD<Eigen::MatrixXd>(jacobian,  Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd sigma = svd.singularValues().asDiagonal();
     inverse = svd.matrixV() * sigma.inverse() * svd.matrixU().transpose();
 }
+
 
 } // namespace kintrol

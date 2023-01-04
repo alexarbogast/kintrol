@@ -2,6 +2,7 @@
 
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit_msgs/CartesianTrajectoryPoint.h>
+#include <std_msgs/Float64MultiArray.h>
 
 #include <kintrol/kintrol_parameters.h> 
 #include <kintrol/kinematic_utilities.h>
@@ -40,6 +41,26 @@ public:
     virtual void update(const Setpoint& setpoint, 
                         robot_state::RobotStatePtr& robot_state,
                         Eigen::VectorXd& cmd_out) override; 
+};
+
+
+class CoordinatedKintroller : public KintrollerBase
+{
+public:
+    CoordinatedKintroller(const KintrolParameters& params, const KinematicChain& kc);
+
+    virtual void update(const Setpoint& setpoint,
+                        robot_state::RobotStatePtr& robot_state,
+                        Eigen::VectorXd& cmd_out) override;
+private:
+    void positionerCmdCB(const std_msgs::Float64MultiArrayConstPtr& msg);
+private:
+    ros::NodeHandle nh_;
+    ros::Subscriber cmd_sub_;
+
+    // number of positioner columns in left half of jacobian .
+    unsigned int pos_cols_from_left; 
+    std::vector<double> positioner_cmd_;
 };
 
 } // namespace kintrollers

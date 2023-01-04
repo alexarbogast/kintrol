@@ -13,7 +13,6 @@ class Kintrol
 public:
     Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningSceneMonitorPtr& planning_scene_monitor);
     void run();
-    void run2();
 private:
     // callbacks
     void twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr& msg);

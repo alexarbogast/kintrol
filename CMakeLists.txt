@@ -58,4 +58,4 @@ add_subdirectory(kintrol_test)
 
 # TEMPORARY
 add_executable(my_test src/my_test.cpp)
-target_link_libraries(my_test ${catkin_LIBRARIES})
+target_link_libraries(my_test kintrol ${catkin_LIBRARIES})

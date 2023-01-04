@@ -14,6 +14,9 @@ struct KintrolParameters
     double prop_gain;
 
     size_t ros_queue_size;
+
+    std::string positioner_joint_model_group;
+    std::string positioner_command_topic;
 };
 
 } // namespace kintrol

@@ -6,14 +6,14 @@ static std::string LOGNAME = "kintrol_server";
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, LOGNAME);
-    ros::AsyncSpinner spinner(1);
+    ros::AsyncSpinner spinner(2);
     spinner.start();
 
     ros::NodeHandle nh("~");
     auto planning_scene_monitor = std::make_shared<planning_scene_monitor::PlanningSceneMonitor>("robot_description");
 
     kintrol::Kintrol kintrol(nh, planning_scene_monitor);
-    kintrol.run2();
+    kintrol.run();
 
     ros::waitForShutdown();
     return 0;

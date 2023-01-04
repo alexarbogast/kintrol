@@ -40,7 +40,7 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
                       parameters_.end_effector,
                       kinematic_chain_);
 
-    kintroller_ = std::make_unique<kintrollers::Kintroller>(parameters_, kinematic_chain_);
+    kintroller_ = std::make_unique<kintrollers::CoordinatedKintroller>(parameters_, kinematic_chain_);
     setIdleSetpoint();
 
     // publish command signal for ros control
@@ -49,55 +49,6 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
 }
 
 void Kintrol::run()
-{
-    ros::Rate rate(parameters_.control_freq);
-    
-    std_msgs::Float64MultiArray msg;
-    
-    Eigen::VectorXd vel(6); 
-    Eigen::VectorXd pose(3);
-    extractVelocity(vel);
-    extractPosition(pose);
-    
-    std::string base_frame_name = joint_model_group_->getLinkModelNames()[0];
-    const robot_model::JointModel* root_joint_model = joint_model_group_->getJointModels()[0];
-    const robot_model::LinkModel* root_link_model = root_joint_model->getParentLinkModel();
-    Eigen::Isometry3d base_frame = current_state_->getFrameTransform(base_frame_name);
-    Eigen::Isometry3d pose_frame = current_state_->getFrameTransform(parameters_.pose_frame);
-
-    Eigen::Isometry3d base_to_pose = pose_frame.inverse() * base_frame;
-
-    while (ros::ok())
-    {
-        extractVelocity(vel);
-        extractPosition(pose);
-
-        current_state_ = planning_scene_monitor_->getStateMonitor()->getCurrentState();
-        Eigen::Isometry3d eef_frame = current_state_->getFrameTransform(parameters_.end_effector);
-        eef_frame = pose_frame.inverse() * eef_frame;
-
-        auto pose_error = parameters_.prop_gain * (pose - eef_frame.translation());
-
-        vel[0] += pose_error.x();
-        vel[1] += pose_error.y();
-        vel[2] += pose_error.z();
-
-        Eigen::MatrixXd jacobian;
-        getJacobian(current_state_, kinematic_chain_, jacobian);
-        Eigen::MatrixXd psuedo_inverse;
-        psuedoInverseJacobian(jacobian, psuedo_inverse);
-
-        Eigen::VectorXd cmd = psuedo_inverse * vel;
-        std::vector<double> output(6);
-        Eigen::VectorXd::Map(&output[0], cmd.size()) = cmd;
-
-        msg.data = output;
-        command_pub_.publish(msg);
-        rate.sleep();
-    }
-}
-
-void Kintrol::run2()
 {
     ros::Rate rate(parameters_.control_freq);
     std_msgs::Float64MultiArray msg;
@@ -130,6 +81,9 @@ bool Kintrol::readParameters()
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "control_freq", parameters_.control_freq);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "prop_gain", parameters_.prop_gain);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "ros_queue_size", parameters_.ros_queue_size);
+    
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "positioner_joint_model_group", parameters_.positioner_joint_model_group);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "positioner_command_topic", parameters_.positioner_command_topic);
 
     rosparam_shortcuts::shutdownIfError(LOGNAME, error);
     return true;

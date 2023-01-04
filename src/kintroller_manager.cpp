@@ -31,9 +31,17 @@ KintrollerManager::KintrollerManager(ros::NodeHandle& nh)
     rob3_context.home_position = HOME_POSITION;
     rob3_context.ready_position = READY_POSITION;
 
+    RobotContext pos_context;
+    pos_context.name = "positioner";
+    pos_context.joint_group_controller = "positioner_joint_velocity_controller";
+    pos_context.trajectory_controller = "positioner_trajectory_controller";
+    pos_context.home_position = HOME_POSITION;
+    pos_context.ready_position = READY_POSITION;
+
     robot_contexts_[rob1_context.name] = rob1_context;
     robot_contexts_[rob2_context.name] = rob2_context;
     robot_contexts_[rob3_context.name] = rob3_context;
+    robot_contexts_[pos_context.name] = pos_context;
 }
 
 bool KintrollerManager::start_joint_group_controller(const std::string& robot_name)

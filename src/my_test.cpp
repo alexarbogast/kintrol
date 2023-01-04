@@ -1,5 +1,8 @@
 #include <ros/ros.h>
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <Eigen/Core>
+
+#include "kintrol/kinematic_utilities.h"
 
 typedef std::vector<const robot_model::JointModel*> JointModelChain;
 
@@ -116,8 +119,39 @@ int main(int argc, char** argv)
     const std::string start_frame = "positioner";
     const std::string end_frame = "rob1_tool0";
 
-    Eigen::MatrixXd jacobian; 
-    getJacobian(state, end_frame, start_frame, jacobian);
+    // Set state
+    state->setJointGroupPositions("hydra_planning_group", {0.0, -0.4, 0.7, 0, 1.3, 0.0, 0, -0.4, 0.7, 0, 1.3, 0.0, 0, -0.4, 0.7, 0, 1.3, 0.0, 0});
 
-    std::cout << jacobian << std::endl;
+    // Find jacobian
+    Eigen::MatrixXd jacobian_positioner; 
+    getJacobian(state, end_frame, start_frame, jacobian_positioner);
+    std::cout << jacobian_positioner << std::endl;
+    
+    Eigen::MatrixXd pos_jac = jacobian_positioner.leftCols(1);
+    Eigen::MatrixXd rob_jac = jacobian_positioner.rightCols(6);
+
+    Eigen::MatrixXd jacobian_world;
+    getJacobian(state, end_frame, "world", jacobian_world);
+    std::cout << jacobian_world << std::endl;
+    
+
+
+    Eigen::MatrixXd rob_jac_inv;
+    kintrol::psuedoInverseJacobian(rob_jac, rob_jac_inv);
+    
+    Eigen::MatrixXd new_pinv = kintrol::pseudoInverse<Eigen::MatrixXd>(rob_jac);
+    //std::cout << new_pinv << std::endl;
+
+    Eigen::MatrixXd pinv = rob_jac.completeOrthogonalDecomposition().pseudoInverse();
+    //std::cout << pinv << std::endl;
+
+    Eigen::VectorXd pos_cmd(1);
+    pos_cmd << 3.0;
+
+
+    Eigen::VectorXd vel(6);
+    vel << 1.0, 1.0, 1.0, 0.0, 0.0, 0.0;
+
+    auto& cmd_out = new_pinv * (vel - (pos_jac * pos_cmd));
+    std::cout << cmd_out << std::endl;
 }

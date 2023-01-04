@@ -4,11 +4,13 @@ robot1:
     setpoint_topic: "setpoint"
     joint_model_group: "rob1_planning_group"
     end_effector: "rob1_typhoon_extruder"
-    pose_frame: "positioner_static"
+    pose_frame: "positioner"
     control_freq: 250
     prop_gain: 0.1
-
     ros_queue_size: 2
+    
+    positioner_joint_model_group: "positioner_planning_group"
+    positioner_command_topic: "/positioner_joint_velocity_controller/command"
 
 robot2:
   kintrol_server:
@@ -16,11 +18,13 @@ robot2:
     setpoint_topic: "setpoint"
     joint_model_group: "rob2_planning_group"
     end_effector: "rob2_typhoon_extruder"
-    pose_frame: "positioner_static"
+    pose_frame: "positioner"
     control_freq: 250
     prop_gain: 0.1
-
     ros_queue_size: 2
+
+    positioner_joint_model_group: "positioner_planning_group"
+    positioner_command_topic: "/positioner_joint_velocity_controller/command"
 
 robot3:
   kintrol_server:
@@ -28,8 +32,10 @@ robot3:
     setpoint_topic: "setpoint"
     joint_model_group: "rob3_planning_group"
     end_effector: "rob3_typhoon_extruder"
-    pose_frame: "positioner_static"
+    pose_frame: "positioner"
     control_freq: 250
     prop_gain: 0.1
-
     ros_queue_size: 2
+
+    positioner_joint_model_group: "positioner_planning_group"
+    positioner_command_topic: "/positioner_joint_velocity_controller/command"

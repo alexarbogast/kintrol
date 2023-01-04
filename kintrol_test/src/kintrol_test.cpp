@@ -43,6 +43,7 @@ public:
         manager_.start_joint_group_controller("robot1");
         manager_.start_joint_group_controller("robot2");
         manager_.start_joint_group_controller("robot3");
+        manager_.start_joint_group_controller("positioner");
 
         sendTrajectories();
         ros::waitForShutdown();
@@ -67,64 +68,65 @@ public:
         // rob1 path
         geometry_msgs::Pose r1p1, r1p2, r1p3, r1p4, r1p5;
         tf::poseEigenToMsg(rob1_eef_pose, r1p1);
-        r1p2.position.x = -0.1;
-        r1p2.position.y = -0.1;
+        r1p2.position.x = -0.197;
+        r1p2.position.y = -0.141;
         r1p2.position.z =  0.0;
 
-        r1p3.position.x = -0.25;
-        r1p3.position.y = -0.1;
+        r1p3.position.x = -0.197;
+        r1p3.position.y = -0.288;
         r1p3.position.z =  0.0;
 
-        r1p4.position.x = -0.25;
-        r1p4.position.y = -0.25;
+        r1p4.position.x = -0.05;
+        r1p4.position.y = -0.288;
         r1p4.position.z =  0.0;
 
-        r1p5.position.x = -0.1;
-        r1p5.position.y = -0.25;
+        r1p5.position.x = -0.05;
+        r1p5.position.y = -0.141;
         r1p5.position.z =  0.0;
 
         // rob2 path
         geometry_msgs::Pose r2p1, r2p2, r2p3, r2p4, r2p5;;
         tf::poseEigenToMsg(rob2_eef_pose, r2p1);
-        r2p2.position.x = 0.1;
-        r2p2.position.y = 0.25;
-        r2p2.position.z = 0.0;
+        r2p2.position.x =  0.175;
+        r2p2.position.y = -0.073;
+        r2p2.position.z =  0.0;
 
-        r2p3.position.x =  0.25;
-        r2p3.position.y =  0.25;
+        r2p3.position.x =  0.322;
+        r2p3.position.y = -0.073;
         r2p3.position.z =  0.0;
-        
-        r2p4.position.x =  0.25;
-        r2p4.position.y = -0.25;
+
+        r2p4.position.x =  0.322;
+        r2p4.position.y =  0.073;
         r2p4.position.z =  0.0;
 
-        r2p5.position.x =  0.1;
-        r2p5.position.y = -0.25;
+        r2p5.position.x =  0.175;
+        r2p5.position.y =  0.073;
         r2p5.position.z =  0.0;
 
 
         // rob3 path
         geometry_msgs::Pose r3p1, r3p2, r3p3, r3p4, r3p5;
         tf::poseEigenToMsg(rob3_eef_pose, r3p1);
-        r3p2.position.x = -0.25;
-        r3p2.position.y = 0.25;
+        r3p2.position.x = -0.05;
+        r3p2.position.y =  0.288;
         r3p2.position.z =  0.0;
 
-        r3p3.position.x = -0.25;
-        r3p3.position.y =  0.1;
+        r3p3.position.x = -0.197;
+        r3p3.position.y =  0.288;
         r3p3.position.z =  0.0;
-
-        r3p4.position.x =  -0.1;
-        r3p4.position.y =  0.1;
+        
+        r3p4.position.x = -0.197;
+        r3p4.position.y =  0.141;
         r3p4.position.z =  0.0;
 
-        r3p5.position.x =  -0.1;
-        r3p5.position.y =  0.25;
+        r3p5.position.x = -0.05;
+        r3p5.position.y =  0.141;
         r3p5.position.z =  0.0;
 
-        traj1.path.poses = {r1p1, r1p2, r1p3, r1p4, r1p5, r1p1};
-        traj2.path.poses = {r2p1, r2p2, r2p3, r2p4, r2p5, r2p1};
-        traj3.path.poses = {r3p1, r3p2, r3p3, r3p4, r3p5, r3p1};
+
+        traj1.path.poses = {r1p1, r1p2, r1p3, r1p4, r1p5, r1p2, r1p1};
+        traj2.path.poses = {r2p1, r2p2, r2p3, r2p4, r2p5, r2p2, r2p1};
+        traj3.path.poses = {r3p1, r3p2, r3p3, r3p4, r3p5, r3p2, r3p1};
 
         std::cout << traj1 << std::endl;
         std::cout << traj2 << std::endl;
@@ -162,7 +164,7 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "kintrol_test");
     ros::NodeHandle nh;
 
-    ros::AsyncSpinner spinner(1);
+    ros::AsyncSpinner spinner(2);
     spinner.start();
 
     KintrolTest test(nh);
