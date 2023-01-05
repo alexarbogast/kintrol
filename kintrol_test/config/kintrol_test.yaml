@@ -8,9 +8,13 @@ robot1:
     control_freq: 250
     prop_gain: 0.1
     ros_queue_size: 2
-    
-    positioner_joint_model_group: "positioner_planning_group"
-    positioner_command_topic: "/positioner_joint_velocity_controller/command"
+
+    kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+    kintroller:
+      positioner_joint_model_group: "positioner_planning_group"
+      positioner_command_topic: "/positioner_joint_velocity_controller/command"
+      constant_orient: true
+
 
 robot2:
   kintrol_server:
@@ -23,8 +27,11 @@ robot2:
     prop_gain: 0.1
     ros_queue_size: 2
 
-    positioner_joint_model_group: "positioner_planning_group"
-    positioner_command_topic: "/positioner_joint_velocity_controller/command"
+    kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+    kintroller:
+      positioner_joint_model_group: "positioner_planning_group"
+      positioner_command_topic: "/positioner_joint_velocity_controller/command"
+      constant_orient: true
 
 robot3:
   kintrol_server:
@@ -37,5 +44,8 @@ robot3:
     prop_gain: 0.1
     ros_queue_size: 2
 
-    positioner_joint_model_group: "positioner_planning_group"
-    positioner_command_topic: "/positioner_joint_velocity_controller/command"
+    kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+    kintroller:
+      positioner_joint_model_group: "positioner_planning_group"
+      positioner_command_topic: "/positioner_joint_velocity_controller/command"
+      constant_orient: true

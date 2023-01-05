@@ -18,6 +18,7 @@ private:
     void twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr& msg);
 
     bool readParameters();
+    void registerKintroller();
     void setIdleSetpoint();
     inline void extractPosition(Eigen::VectorXd& pose);
     inline void extractVelocity(Eigen::VectorXd& pose);

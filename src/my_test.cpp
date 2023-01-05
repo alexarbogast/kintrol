@@ -119,12 +119,16 @@ int main(int argc, char** argv)
     const std::string start_frame = "positioner";
     const std::string end_frame = "rob1_tool0";
 
+    kintrol::KinematicChain kc;
+    kintrol::getKinematicChain(state->getRobotModel(), start_frame, end_frame, kc);
+
     // Set state
-    state->setJointGroupPositions("hydra_planning_group", {0.0, -0.4, 0.7, 0, 1.3, 0.0, 0, -0.4, 0.7, 0, 1.3, 0.0, 0, -0.4, 0.7, 0, 1.3, 0.0, 0});
+    state->setJointGroupPositions("hydra_planning_group", {0.0, -0.4, 0.7, 0, 1.3, 0.0, 0, -0.4, 0.7, 0, 1.3, 0.0, 0, -0.4, 0.7, 0, 1.3, 0.0, 0.5});
 
     // Find jacobian
     Eigen::MatrixXd jacobian_positioner; 
-    getJacobian(state, end_frame, start_frame, jacobian_positioner);
+    kintrol::getJacobian(state, kc, jacobian_positioner);
+    std::cout << "Positioner Jacobian:" << std::endl;
     std::cout << jacobian_positioner << std::endl;
     
     Eigen::MatrixXd pos_jac = jacobian_positioner.leftCols(1);
@@ -132,9 +136,8 @@ int main(int argc, char** argv)
 
     Eigen::MatrixXd jacobian_world;
     getJacobian(state, end_frame, "world", jacobian_world);
+    std::cout << "World Jacobian" << std::endl;
     std::cout << jacobian_world << std::endl;
-    
-
 
     Eigen::MatrixXd rob_jac_inv;
     kintrol::psuedoInverseJacobian(rob_jac, rob_jac_inv);
@@ -147,7 +150,6 @@ int main(int argc, char** argv)
 
     Eigen::VectorXd pos_cmd(1);
     pos_cmd << 3.0;
-
 
     Eigen::VectorXd vel(6);
     vel << 1.0, 1.0, 1.0, 0.0, 0.0, 0.0;

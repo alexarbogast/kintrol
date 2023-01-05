@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     {
         std_msgs::Float64MultiArray msg;
 
-        double vel = 0.5 * sin(ros::Time::now().toSec());
+        double vel = 0.3 * sin(ros::Time::now().toSec());
         msg.data.push_back(vel);
         pos_cmd_pub.publish(msg) ;    
         rate.sleep();

@@ -40,7 +40,7 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
                       parameters_.end_effector,
                       kinematic_chain_);
 
-    kintroller_ = std::make_unique<kintrollers::CoordinatedKintroller>(parameters_, kinematic_chain_);
+    registerKintroller();
     setIdleSetpoint();
 
     // publish command signal for ros control
@@ -81,12 +81,29 @@ bool Kintrol::readParameters()
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "control_freq", parameters_.control_freq);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "prop_gain", parameters_.prop_gain);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "ros_queue_size", parameters_.ros_queue_size);
-    
-    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "positioner_joint_model_group", parameters_.positioner_joint_model_group);
-    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "positioner_command_topic", parameters_.positioner_command_topic);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller_type", parameters_.kintroller_type);
 
+    if (parameters_.kintroller_type == KintrollerType::COORDINATED_KINTROLLER)
+    {
+        error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller/positioner_joint_model_group", parameters_.positioner_joint_model_group);
+        error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller/positioner_command_topic", parameters_.positioner_command_topic);
+        error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller/constant_orient", parameters_.constant_orient);
+    }
+    
     rosparam_shortcuts::shutdownIfError(LOGNAME, error);
     return true;
+}
+
+void Kintrol::registerKintroller()
+{
+    if (parameters_.kintroller_type == KintrollerType::COORDINATED_KINTROLLER)
+    {
+        kintroller_ = std::make_unique<kintrollers::CoordinatedKintroller>(parameters_, kinematic_chain_);
+    }
+    else
+    {
+        kintroller_ = std::make_unique<kintrollers::Kintroller>(parameters_, kinematic_chain_);
+    }
 }
 
 void Kintrol::setIdleSetpoint()

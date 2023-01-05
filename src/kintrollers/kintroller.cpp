@@ -100,15 +100,17 @@ void CoordinatedKintroller::update(const Setpoint& setpoint,
     Eigen::MatrixXd pos_jac = jacobian.leftCols(1);
     Eigen::MatrixXd rob_jac = jacobian.rightCols(6);
 
-    Eigen::Vector3d zeros(0, 0, 0);
-    pos_jac.block<3, 1>(3, 0) = zeros;
+    // TODO: keep constant world frame orientation
+    if (parameters_.constant_orient)
+    {
+        Eigen::Vector3d zeros(0, 0, 0);
+        pos_jac.block<3, 1>(3, 0) = zeros;
+    }
 
     Eigen::VectorXd pos_cmd = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>
                               (positioner_cmd_.data(), positioner_cmd_.size());
 
     Eigen::MatrixXd rob_jac_inv = pseudoInverse(rob_jac);
-    //psuedoInverseJacobian(rob_jac, rob_jac_inv);
-    std::cout << pos_jac * pos_cmd << std::endl << std::endl;;
 
     // why is this a plus
     cmd_out = rob_jac_inv * (vel + (pos_jac * pos_cmd));
