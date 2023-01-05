@@ -4,16 +4,23 @@ robot1:
     setpoint_topic: "setpoint"
     joint_model_group: "rob1_planning_group"
     end_effector: "rob1_typhoon_extruder"
-    pose_frame: "positioner"
     control_freq: 250
     prop_gain: 0.1
     ros_queue_size: 2
 
-    kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+    kintroller_names: ["kintroller", "coordinated_kintroller"]
+
     kintroller:
+      pose_frame: "positioner_static"
+      kintroller_type: 0 # 0: kintroller, 1: coordinated controller
+
+    coordinated_kintroller:
+      kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+      pose_frame: "positioner"
       positioner_joint_model_group: "positioner_planning_group"
       positioner_command_topic: "/positioner_joint_velocity_controller/command"
       constant_orient: true
+
 
 
 robot2:
@@ -22,13 +29,19 @@ robot2:
     setpoint_topic: "setpoint"
     joint_model_group: "rob2_planning_group"
     end_effector: "rob2_typhoon_extruder"
-    pose_frame: "positioner"
     control_freq: 250
     prop_gain: 0.1
     ros_queue_size: 2
 
-    kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+    kintroller_names: ["kintroller", "coordinated_kintroller"]
+
     kintroller:
+      pose_frame: "positioner_static"
+      kintroller_type: 0 # 0: kintroller, 1: coordinated controller
+
+    coordinated_kintroller:
+      kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+      pose_frame: "positioner"
       positioner_joint_model_group: "positioner_planning_group"
       positioner_command_topic: "/positioner_joint_velocity_controller/command"
       constant_orient: true
@@ -39,13 +52,19 @@ robot3:
     setpoint_topic: "setpoint"
     joint_model_group: "rob3_planning_group"
     end_effector: "rob3_typhoon_extruder"
-    pose_frame: "positioner"
     control_freq: 250
     prop_gain: 0.1
     ros_queue_size: 2
 
-    kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+    kintroller_names: ["kintroller", "coordinated_kintroller"]
+
     kintroller:
+      pose_frame: "positioner_static"
+      kintroller_type: 0 # 0: kintroller, 1: coordinated controller
+
+    coordinated_kintroller:
+      kintroller_type: 1 # 0: kintroller, 1: coordinated controller
+      pose_frame: "positioner"
       positioner_joint_model_group: "positioner_planning_group"
       positioner_command_topic: "/positioner_joint_velocity_controller/command"
       constant_orient: true

@@ -16,27 +16,33 @@ typedef moveit_msgs::CartesianTrajectoryPoint Setpoint;
 class KintrollerBase
 {
 public:
-    KintrollerBase(const KintrolParameters& params, const KinematicChain& kc);
+    KintrollerBase(const std::string& name, const KintrolParameters& params, const KinematicChain& kc);
 
     virtual void update(const Setpoint& setpoint, 
                         robot_state::RobotStatePtr& robot_state,
                         Eigen::VectorXd& cmd_out) = 0;
 
+    inline const std::string& getPoseFrame() const { return pose_frame_; };
+
 protected:
     void extractPosition(const Setpoint& setpoint, Eigen::VectorXd& position);
     void extractVelocity(const Setpoint& setpoint, Eigen::VectorXd& velocity);
 protected:
+    std::string name_;
+    ros::NodeHandle nh_;
+
     KintrolParameters parameters_;
     KinematicChain kinematic_chain_;
 
-    Eigen::Isometry3d pose_frame_;
+    std::string pose_frame_;
 };
+typedef std::shared_ptr<KintrollerBase> KintrollerPtr;
 
 
 class Kintroller : public KintrollerBase
 {
 public:
-    Kintroller(const KintrolParameters& params, const KinematicChain& kc);
+    Kintroller(const std::string& name, const KintrolParameters& params, const KinematicChain& kc);
 
     virtual void update(const Setpoint& setpoint, 
                         robot_state::RobotStatePtr& robot_state,
@@ -47,7 +53,7 @@ public:
 class CoordinatedKintroller : public KintrollerBase
 {
 public:
-    CoordinatedKintroller(const KintrolParameters& params, const KinematicChain& kc);
+    CoordinatedKintroller(const std::string& name, const KintrolParameters& params, const KinematicChain& kc);
 
     virtual void update(const Setpoint& setpoint,
                         robot_state::RobotStatePtr& robot_state,
@@ -55,8 +61,9 @@ public:
 private:
     void positionerCmdCB(const std_msgs::Float64MultiArrayConstPtr& msg);
 private:
-    ros::NodeHandle nh_;
     ros::Subscriber cmd_sub_;
+
+    bool constant_orient_;
 
     // number of positioner columns in left half of jacobian .
     unsigned int pos_cols_from_left; 

@@ -3,8 +3,10 @@
 #include <ros/ros.h>
 #include <moveit_msgs/CartesianTrajectoryPoint.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+#include <unordered_map>
 
 #include "kintrol/kintrollers/kintroller.h"
+#include "kintrol/SwitchKintroller.h"
 
 namespace kintrol
 {
@@ -16,9 +18,11 @@ public:
 private:
     // callbacks
     void twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr& msg);
+    bool switchKintrollerService(SwitchKintroller::Request &req,
+                                 SwitchKintroller::Response &res);
 
     bool readParameters();
-    void registerKintroller();
+    bool registerKintrollers();
     void setIdleSetpoint();
     inline void extractPosition(Eigen::VectorXd& pose);
     inline void extractVelocity(Eigen::VectorXd& pose);
@@ -31,13 +35,16 @@ private:
     ros::Publisher command_pub_;
     ros::Subscriber setpoint_sub_;
 
+    ros::ServiceServer switch_kintroller_service_;
+
     planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
     moveit::core::RobotStatePtr current_state_;
     const moveit::core::JointModelGroup* joint_model_group_;
     unsigned int n_variables_;
     KinematicChain kinematic_chain_;
 
-    std::unique_ptr<kintrollers::KintrollerBase> kintroller_;
+    std::shared_ptr<kintrollers::KintrollerBase> active_kintroller_;
+    std::unordered_map<std::string, kintrollers::KintrollerPtr> kintroller_map_;
 };
 
 } // namespace kintrol

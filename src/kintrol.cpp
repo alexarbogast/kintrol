@@ -35,13 +35,16 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
     joint_model_group_ = current_state_->getJointModelGroup(parameters_.joint_model_group);
     n_variables_ = joint_model_group_->getVariableCount();
 
-    getKinematicChain(current_state_->getRobotModel(), 
-                      parameters_.pose_frame,
-                      parameters_.end_effector,
-                      kinematic_chain_);
+    //getKinematicChain(current_state_->getRobotModel(), 
+    //                  parameters_.pose_frame,
+    //                  parameters_.end_effector,
+    //                  kinematic_chain_);
 
-    registerKintroller();
+    registerKintrollers();
     setIdleSetpoint();
+
+    // start services
+    switch_kintroller_service_ = pnh_.advertiseService("switch_kintrollers", &Kintrol::switchKintrollerService, this);
 
     // publish command signal for ros control
     command_pub_= nh_.advertise<std_msgs::Float64MultiArray>(parameters_.command_topic, parameters_.ros_queue_size);
@@ -58,7 +61,7 @@ void Kintrol::run()
         Eigen::VectorXd cmd_out(n_variables_);
         current_state_ = planning_scene_monitor_->getStateMonitor()->getCurrentState();
         
-        kintroller_->update(setpoint_, current_state_, cmd_out);
+        active_kintroller_->update(setpoint_, current_state_, cmd_out);
 
         std::vector<double> output(n_variables_);
         Eigen::VectorXd::Map(&output[0], cmd_out.size()) = cmd_out;
@@ -77,40 +80,56 @@ bool Kintrol::readParameters()
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "setpoint_topic", parameters_.setpoint_topic);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "joint_model_group", parameters_.joint_model_group);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "end_effector", parameters_.end_effector);
-    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "pose_frame", parameters_.pose_frame);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "control_freq", parameters_.control_freq);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "prop_gain", parameters_.prop_gain);
     error += !rosparam_shortcuts::get(LOGNAME, pnh_, "ros_queue_size", parameters_.ros_queue_size);
-    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller_type", parameters_.kintroller_type);
-
-    if (parameters_.kintroller_type == KintrollerType::COORDINATED_KINTROLLER)
-    {
-        error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller/positioner_joint_model_group", parameters_.positioner_joint_model_group);
-        error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller/positioner_command_topic", parameters_.positioner_command_topic);
-        error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller/constant_orient", parameters_.constant_orient);
-    }
+    error += !rosparam_shortcuts::get(LOGNAME, pnh_, "kintroller_names", parameters_.kintroller_names);
     
     rosparam_shortcuts::shutdownIfError(LOGNAME, error);
     return true;
 }
 
-void Kintrol::registerKintroller()
+bool Kintrol::registerKintrollers()
 {
-    if (parameters_.kintroller_type == KintrollerType::COORDINATED_KINTROLLER)
+    if (parameters_.kintroller_names.empty())
     {
-        kintroller_ = std::make_unique<kintrollers::CoordinatedKintroller>(parameters_, kinematic_chain_);
+        ROS_ERROR("No valid kintrollers specified");
+        return false;
     }
-    else
+
+    auto& robot_model = planning_scene_monitor_->getRobotModel();
+
+    std::size_t error = 0;
+    for (auto& name : parameters_.kintroller_names)
     {
-        kintroller_ = std::make_unique<kintrollers::Kintroller>(parameters_, kinematic_chain_);
+        int type;
+        std::string pose_frame;
+        error += !rosparam_shortcuts::get(LOGNAME, pnh_, name + "/kintroller_type", type);
+        error += !rosparam_shortcuts::get(LOGNAME, pnh_, name + "/pose_frame", pose_frame);
+        rosparam_shortcuts::shutdownIfError(LOGNAME, error);
+        kintrol::KinematicChain kc;
+        getKinematicChain(robot_model, pose_frame, parameters_.end_effector, kc);
+
+        if (type == KintrollerType::KINTROLLER) {
+            kintroller_map_[name] = std::make_shared<kintrollers::Kintroller>(name, parameters_, kc);
+        }
+        else if (type == KintrollerType::COORDINATED_KINTROLLER) {
+            kintroller_map_[name] = 
+                std::make_shared<kintrollers::CoordinatedKintroller>(name, parameters_, kc);
+        }
     }
+
+    std::string default_kintroller_name = parameters_.kintroller_names[0];
+    ROS_INFO_STREAM("Defaulting to kintroller: " << default_kintroller_name);
+    active_kintroller_ = kintroller_map_[default_kintroller_name];
+    return true;
 }
 
 void Kintrol::setIdleSetpoint()
 {
     robot_state::RobotStatePtr current_state = planning_scene_monitor_->getStateMonitor()->getCurrentState();
     Eigen::Isometry3d eef_frame = current_state->getGlobalLinkTransform(parameters_.end_effector);
-    Eigen::Isometry3d pose_frame = current_state->getGlobalLinkTransform(parameters_.pose_frame);
+    Eigen::Isometry3d pose_frame = current_state->getGlobalLinkTransform(active_kintroller_->getPoseFrame());
     Eigen::Isometry3d pose_eef = pose_frame.inverse() * eef_frame;
     
     setpoint_.point.pose.position.x = pose_eef.translation().x();
@@ -148,4 +167,19 @@ void Kintrol::twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr
     setpoint_ = *msg;
 }
 
-} // namespace servo
+bool Kintrol::switchKintrollerService(SwitchKintroller::Request &req,
+                             SwitchKintroller::Response &res)
+{
+    if (kintroller_map_.count(req.kintroller_name) > 0)
+    {
+        active_kintroller_ = kintroller_map_[req.kintroller_name];
+        return true;
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Failed to switch to kintroller: " << req.kintroller_name);
+        return false;
+    }
+}
+
+} // namespace kintrol

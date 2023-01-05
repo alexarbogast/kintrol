@@ -15,14 +15,13 @@ struct KintrolParameters
     std::string orient_frame;
     double control_freq;
     double prop_gain;
-
     size_t ros_queue_size;
-    int kintroller_type;
+
+    std::vector<std::string> kintroller_names;    
 
     // Kintroller parameters
-    std::string positioner_joint_model_group;
-    std::string positioner_command_topic;
-    bool constant_orient;
+    //std::string positioner_joint_model_group;
+    //std::string positioner_command_topic;
 };
 
 } // namespace kintrol

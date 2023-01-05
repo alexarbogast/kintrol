@@ -13,6 +13,11 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
 )
 
+add_service_files(
+    DIRECTORY srv
+    FILES SwitchKintroller.srv
+)
+
 add_action_files(
     DIRECTORY action
     FILES TrajectoryExecution.action
