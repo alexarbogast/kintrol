@@ -1,6 +1,7 @@
 # pragma once
 
 #include "kintrol/kintrollers/kintroller.h"
+#include "kintrol/low_pass_filter.h"
 
 namespace kintrol
 {
@@ -17,7 +18,7 @@ public:
 
     PositionerKintroller(const std::string& name, const KintrolParameters& params, const KinematicChain& kc);
     
-    void initializeBaseFrames(robot_model::RobotModelConstPtr robot_model);
+    void initialize(robot_model::RobotModelConstPtr robot_model);
     virtual void update(const Setpoint& setpoint,
                         robot_state::RobotStatePtr& robot_state,
                         Eigen::VectorXd& cmd_out) override;
@@ -26,6 +27,11 @@ public:
 
 private:  
     std::vector<CoordinatedUnitContext> coord_unit_contexts_;
+    LowPassFilter filter_;
+
+    unsigned int n_vars_;
+    Eigen::VectorXd output_history;
+    ros::Time previous_;
 };
 
 } // namespace kintrol

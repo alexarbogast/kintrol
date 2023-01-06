@@ -49,6 +49,7 @@ include_directories(SYSTEM ${catkin_INCLUDE_DIRS})
 add_library(kintrol 
     src/kintrol.cpp
     src/kinematic_utilities.cpp
+    src/low_pass_filter.cpp
     src/kintrollers/kintroller.cpp
     src/kintrollers/positioner_kintroller.cpp
     )

@@ -2,6 +2,10 @@
 
 const static std::string LOGNAME = "kintrol_server";
 
+// TODO: make these parameters
+const static double MAX_VELOCITY = 3.0; // rad/s
+const static double LOWPASS_CUTOFF = 5.0; // Hz
+
 namespace kintrol
 {
 PositionerKintroller::PositionerKintroller(const std::string& name, 
@@ -27,22 +31,26 @@ PositionerKintroller::PositionerKintroller(const std::string& name,
         
         coord_unit_contexts_.push_back(cuc);
     }
+
+    filter_.reconfigureFilter(LOWPASS_CUTOFF, 1 / parameters_.control_freq);
 }
 
-void PositionerKintroller::initializeBaseFrames(robot_model::RobotModelConstPtr robot_model)
+void PositionerKintroller::initialize(robot_model::RobotModelConstPtr robot_model)
 {
     for (CoordinatedUnitContext& unit : coord_unit_contexts_)
     {
         const robot_model::JointModelGroup* jmg = robot_model->getJointModelGroup(unit.joint_model_group);
         unit.base_frame = jmg->getLinkModelNames()[0];
     }
+
+    n_vars_ = robot_model->getJointModelGroup(parameters_.joint_model_group)->getVariableCount();
+    output_history.resize(n_vars_);
 }
 
 void PositionerKintroller::update(const Setpoint& setpoint,
                                  robot_state::RobotStatePtr& robot_state,
                                  Eigen::VectorXd& cmd_out) 
 {
-    static unsigned int n_vars = robot_state->getJointModelGroup(parameters_.joint_model_group)->getVariableCount();
     static double K = 2.0;
 
     double eef_error = 0.0;
@@ -62,12 +70,20 @@ void PositionerKintroller::update(const Setpoint& setpoint,
         eef_error += error;
     }
 
-    std::cout << eef_error << std::endl << std::endl;
+    double output = K * eef_error;
+    
+    output = output > MAX_VELOCITY ? MAX_VELOCITY : output;
+    output = output < -MAX_VELOCITY ? -MAX_VELOCITY : output;
 
-    Eigen::VectorXd cmd(n_vars);
-    cmd << K * eef_error;
+    // low-pass filter output
+    output = filter_.update(output);
+    
+    Eigen::VectorXd output_vec(n_vars_);
+    output_vec << output;
+    cmd_out = output_vec;
 
-    cmd_out = cmd;
+    output_history = output_vec;
+    previous_ = ros::Time::now();
 }
 
 } // namespace kintrol

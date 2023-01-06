@@ -121,7 +121,7 @@ bool Kintrol::registerKintrollers()
             std::shared_ptr<PositionerKintroller> kintroller = 
                 std::make_shared<PositionerKintroller>(name, parameters_, kc);
             
-            kintroller->initializeBaseFrames(robot_model);
+            kintroller->initialize(robot_model);
             kintroller_map_[name] = kintroller; 
         }
     }
