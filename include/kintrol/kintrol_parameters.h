@@ -3,7 +3,7 @@
 
 namespace kintrol
 {
-enum KintrollerType { KINTROLLER, COORDINATED_KINTROLLER };
+enum KintrollerType { KINTROLLER, COORDINATED_KINTROLLER, POSITIONER_KINTROLLER };
 
 struct KintrolParameters
 {

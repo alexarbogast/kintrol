@@ -5,26 +5,25 @@
 
     <!-- robot 1 -->
     <group ns="robot1">
-        <!--<node name="trajectory_pub" pkg="kintrol" type="trajectory_pub" output="screen"/>-->
         <node name="trajectory_execution" pkg="kintrol" type="trajectory_execution_server" output="screen"/>
-        <node name="kintrol_server" pkg="kintrol" type="kintrol_server" output="screen"/>
+        <node name="kintrol_server" pkg="kintrol" type="kintrol_server"/>
     </group>
 
     <!-- robot 2 -->
     <group ns="robot2">
-        <!--<node name="trajectory_pub" pkg="kintrol" type="trajectory_pub" output="screen"/>-->
         <node name="trajectory_execution" pkg="kintrol" type="trajectory_execution_server"/>
         <node name="kintrol_server" pkg="kintrol" type="kintrol_server"/>
     </group>
 
     <!-- robot 3 -->
     <group ns="robot3">
-        <!--<node name="trajectory_pub" pkg="kintrol" type="trajectory_pub" output="screen"/>-->
         <node name="trajectory_execution" pkg="kintrol" type="trajectory_execution_server"/>
         <node name="kintrol_server" pkg="kintrol" type="kintrol_server"/>
     </group>
 
     <!-- positioner -->
-    <node name="temp_pos_controller" pkg="kintrol" type="temp_pos_controller"/>
+    <group ns="positioner">
+        <node name="kintrol_server" pkg="kintrol" type="kintrol_server" output="screen"/>
+    </group>
 
 </launch>

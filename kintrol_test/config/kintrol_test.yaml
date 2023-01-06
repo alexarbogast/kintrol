@@ -68,3 +68,20 @@ robot3:
       positioner_joint_model_group: "positioner_planning_group"
       positioner_command_topic: "/positioner_joint_velocity_controller/command"
       constant_orient: true
+
+positioner:
+  kintrol_server:
+    command_topic: "/positioner_joint_velocity_controller/command"
+    setpoint_topic: "setpoint"
+    joint_model_group: "positioner_planning_group"
+    end_effector: "positioner"
+    control_freq: 100
+    prop_gain: 0.1
+    ros_queue_size: 2
+
+    kintroller_names: ["positioner_kintroller"]
+
+    positioner_kintroller:
+      kintroller_type: 2 # 2: positioner controller
+      pose_frame: "world"
+      coord_group_names: ["robot1", "robot2", "robot3"]

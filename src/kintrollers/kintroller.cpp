@@ -5,9 +5,6 @@ const static std::string LOGNAME = "kintrol_server";
 
 namespace kintrol
 {
-namespace kintrollers
-{
-
 KintrollerBase::KintrollerBase(const std::string& name, const KintrolParameters& params, const KinematicChain& kc)
     : name_(name), parameters_(params), kinematic_chain_(kc)
 {
@@ -129,5 +126,4 @@ void CoordinatedKintroller::positionerCmdCB(const std_msgs::Float64MultiArrayCon
     positioner_cmd_ = msg->data;
 }
 
-} // namespace kintrollers
 } // namespace kintrol

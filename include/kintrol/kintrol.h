@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "kintrol/kintrollers/kintroller.h"
+#include "kintrol/kintrollers/positioner_kintroller.h"
 #include "kintrol/SwitchKintroller.h"
 
 namespace kintrol
@@ -24,8 +25,7 @@ private:
     bool readParameters();
     bool registerKintrollers();
     void setIdleSetpoint();
-    inline void extractPosition(Eigen::VectorXd& pose);
-    inline void extractVelocity(Eigen::VectorXd& pose);
+
 private:
     KintrolParameters parameters_;
     moveit_msgs::CartesianTrajectoryPoint setpoint_;
@@ -43,8 +43,8 @@ private:
     unsigned int n_variables_;
     KinematicChain kinematic_chain_;
 
-    std::shared_ptr<kintrollers::KintrollerBase> active_kintroller_;
-    std::unordered_map<std::string, kintrollers::KintrollerPtr> kintroller_map_;
+    std::shared_ptr<KintrollerBase> active_kintroller_;
+    std::unordered_map<std::string, KintrollerPtr> kintroller_map_;
 };
 
 } // namespace kintrol

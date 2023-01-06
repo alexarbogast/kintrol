@@ -53,6 +53,7 @@ public:
         manager_.start_joint_group_controller("positioner");
 
         sendTrajectories();
+        sendTrajectories2();
 
         manager_.start_trajectory_controller("robot1");
         manager_.start_trajectory_controller("robot2");
@@ -67,20 +68,20 @@ public:
         kintrol::TrajectoryExecutionGoal traj1, traj2, traj3;
 
         // find initial positions
-        Eigen::Isometry3d rob1_eef_pose = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB1_END_EFFECTOR);
-        Eigen::Isometry3d rob2_eef_pose = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB2_END_EFFECTOR);
-        Eigen::Isometry3d rob3_eef_pose = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB3_END_EFFECTOR);
+        Eigen::Isometry3d rob1_eef_pose_world = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB1_END_EFFECTOR);
+        Eigen::Isometry3d rob2_eef_pose_world = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB2_END_EFFECTOR);
+        Eigen::Isometry3d rob3_eef_pose_world = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB3_END_EFFECTOR);
 
         const auto& world_to_base = hydra_move_group_interface_.getCurrentState()->getFrameTransform(COORDINATED_BASE_FRAME);
 
-        rob1_eef_pose = world_to_base.inverse() * rob1_eef_pose;
-        rob2_eef_pose = world_to_base.inverse() * rob2_eef_pose;
-        rob3_eef_pose = world_to_base.inverse() * rob3_eef_pose;
+        Eigen::Isometry3d rob1_eef_pose_base = world_to_base.inverse() * rob1_eef_pose_world;
+        Eigen::Isometry3d rob2_eef_pose_base = world_to_base.inverse() * rob2_eef_pose_world;
+        Eigen::Isometry3d rob3_eef_pose_base = world_to_base.inverse() * rob3_eef_pose_world;
 
         // ============== Coordinated Trajectories ======================
         // rob1 path
         geometry_msgs::Pose r1p1, r1p2, r1p3, r1p4, r1p5;
-        tf::poseEigenToMsg(rob1_eef_pose, r1p1);
+        tf::poseEigenToMsg(rob1_eef_pose_base, r1p1);
         r1p2.position.x = -0.197;
         r1p2.position.y = -0.141;
         r1p2.position.z =  0.0;
@@ -99,7 +100,7 @@ public:
 
         // rob2 path
         geometry_msgs::Pose r2p1, r2p2, r2p3, r2p4, r2p5;;
-        tf::poseEigenToMsg(rob2_eef_pose, r2p1);
+        tf::poseEigenToMsg(rob2_eef_pose_base, r2p1);
         r2p2.position.x =  0.175;
         r2p2.position.y = -0.073;
         r2p2.position.z =  0.0;
@@ -116,10 +117,9 @@ public:
         r2p5.position.y =  0.073;
         r2p5.position.z =  0.0;
 
-
         // rob3 path
         geometry_msgs::Pose r3p1, r3p2, r3p3, r3p4, r3p5;
-        tf::poseEigenToMsg(rob3_eef_pose, r3p1);
+        tf::poseEigenToMsg(rob3_eef_pose_base, r3p1);
         r3p2.position.x = -0.05;
         r3p2.position.y =  0.288;
         r3p2.position.z =  0.0;
@@ -136,9 +136,9 @@ public:
         r3p5.position.y =  0.141;
         r3p5.position.z =  0.0;
 
-        traj1.path.poses = {r1p1, r1p2, r1p3, r1p4, r1p5, r1p2, r1p1};
-        traj2.path.poses = {r2p1, r2p2, r2p3, r2p4, r2p5, r2p2, r2p1};
-        traj3.path.poses = {r3p1, r3p2, r3p3, r3p4, r3p5, r3p2, r3p1};
+        traj1.path.poses = {r1p1, r1p2, r1p3, r1p4, r1p5, r1p2};
+        traj2.path.poses = {r2p1, r2p2, r2p3, r2p4, r2p5, r2p2};
+        traj3.path.poses = {r3p1, r3p2, r3p3, r3p4, r3p5, r3p2};
 
         // switch to difference kintroller using service
         kintrol::SwitchKintroller srv;
@@ -156,26 +156,31 @@ public:
         ac3.waitForResult();
 
         // =================== Normal Trajectories ========================
-        Eigen::Isometry3d rob1_eef_pose_final = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB1_END_EFFECTOR);
-        Eigen::Isometry3d rob2_eef_pose_final = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB2_END_EFFECTOR);
-        Eigen::Isometry3d rob3_eef_pose_final = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB3_END_EFFECTOR);
+        Eigen::Isometry3d rob1_eef_pose_after = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB1_END_EFFECTOR);
+        Eigen::Isometry3d rob2_eef_pose_after = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB2_END_EFFECTOR);
+        Eigen::Isometry3d rob3_eef_pose_after = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB3_END_EFFECTOR);
         const auto& world_to_base2 = hydra_move_group_interface_.getCurrentState()->getFrameTransform(BASE_FRAME);
 
-        rob1_eef_pose_final = world_to_base2.inverse() * rob1_eef_pose_final;
-        rob2_eef_pose_final = world_to_base2.inverse() * rob2_eef_pose_final;
-        rob3_eef_pose_final = world_to_base2.inverse() * rob3_eef_pose_final;
+        rob1_eef_pose_after = world_to_base2.inverse() * rob1_eef_pose_after;
+        rob2_eef_pose_after = world_to_base2.inverse() * rob2_eef_pose_after;
+        rob3_eef_pose_after = world_to_base2.inverse() * rob3_eef_pose_after;
+
+        Eigen::Isometry3d rob1_eef_pose_final = world_to_base2.inverse() * rob1_eef_pose_world;
+        Eigen::Isometry3d rob2_eef_pose_final = world_to_base2.inverse() * rob2_eef_pose_world;
+        Eigen::Isometry3d rob3_eef_pose_final = world_to_base2.inverse() * rob3_eef_pose_world;
+        
 
         // robot 1
-        tf::poseEigenToMsg(rob1_eef_pose_final, r1p1);
-        tf::poseEigenToMsg(rob1_eef_pose, r1p2);
+        tf::poseEigenToMsg(rob1_eef_pose_after, r1p1);
+        tf::poseEigenToMsg(rob1_eef_pose_final, r1p2);
 
-        // robot 1
-        tf::poseEigenToMsg(rob1_eef_pose_final, r2p1);
-        tf::poseEigenToMsg(rob1_eef_pose, r2p2);
+        // robot 2
+        tf::poseEigenToMsg(rob2_eef_pose_after, r2p1);
+        tf::poseEigenToMsg(rob2_eef_pose_final, r2p2);
 
-        // robot 1
-        tf::poseEigenToMsg(rob1_eef_pose_final, r3p1);
-        tf::poseEigenToMsg(rob1_eef_pose, r3p2);
+        // robot 3
+        tf::poseEigenToMsg(rob3_eef_pose_after, r3p1);
+        tf::poseEigenToMsg(rob3_eef_pose_final, r3p2);
 
         traj1.path.poses = {r1p1, r1p2};
         traj2.path.poses = {r2p1, r2p2};
@@ -201,20 +206,20 @@ public:
         kintrol::TrajectoryExecutionGoal traj1, traj2, traj3;
 
         // find initial positions
-        Eigen::Isometry3d rob1_eef_pose = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB1_END_EFFECTOR);
-        Eigen::Isometry3d rob2_eef_pose = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB2_END_EFFECTOR);
-        Eigen::Isometry3d rob3_eef_pose = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB3_END_EFFECTOR);
+        Eigen::Isometry3d rob1_eef_pose_world = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB1_END_EFFECTOR);
+        Eigen::Isometry3d rob2_eef_pose_world = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB2_END_EFFECTOR);
+        Eigen::Isometry3d rob3_eef_pose_world = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB3_END_EFFECTOR);
 
-        const auto& world_to_base = hydra_move_group_interface_.getCurrentState()->getFrameTransform(BASE_FRAME);
-        Eigen::Isometry3d base_to_world = world_to_base.inverse();
+        const auto& world_to_base = hydra_move_group_interface_.getCurrentState()->getFrameTransform(COORDINATED_BASE_FRAME);
 
-        rob1_eef_pose = base_to_world * rob1_eef_pose;
-        rob2_eef_pose = base_to_world * rob2_eef_pose;
-        rob3_eef_pose = base_to_world * rob3_eef_pose;
+        Eigen::Isometry3d rob1_eef_pose_base = world_to_base.inverse() * rob1_eef_pose_world;
+        Eigen::Isometry3d rob2_eef_pose_base = world_to_base.inverse() * rob2_eef_pose_world;
+        Eigen::Isometry3d rob3_eef_pose_base = world_to_base.inverse() * rob3_eef_pose_world;
 
+        // ============== Coordinated Trajectories ======================
         // rob1 path
         geometry_msgs::Pose r1p1, r1p2, r1p3, r1p4, r1p5;
-        tf::poseEigenToMsg(rob1_eef_pose, r1p1);
+        tf::poseEigenToMsg(rob1_eef_pose_base, r1p1);
         r1p2.position.x = -0.300;
         r1p2.position.y = -0.300;
         r1p2.position.z =  0.0;
@@ -233,7 +238,7 @@ public:
 
         // rob2 path
         geometry_msgs::Pose r2p1, r2p2, r2p3, r2p4, r2p5;;
-        tf::poseEigenToMsg(rob2_eef_pose, r2p1);
+        tf::poseEigenToMsg(rob2_eef_pose_base, r2p1);
         r2p2.position.x =  0.275;
         r2p2.position.y =  0.275;
         r2p2.position.z =  0.0;
@@ -253,7 +258,7 @@ public:
 
         // rob3 path
         geometry_msgs::Pose r3p1, r3p2, r3p3, r3p4, r3p5;
-        tf::poseEigenToMsg(rob3_eef_pose, r3p1);
+        tf::poseEigenToMsg(rob3_eef_pose_base, r3p1);
         r3p2.position.x = -0.250;
         r3p2.position.y =  0.250;
         r3p2.position.z =  0.0;
@@ -275,9 +280,56 @@ public:
         traj2.path.poses = {r2p1, r2p2, r2p3, r2p4, r2p5, r2p2, r2p1};
         traj3.path.poses = {r3p1, r3p2, r3p3, r3p4, r3p5, r3p2, r3p1};
 
-        std::cout << traj1 << std::endl;
-        std::cout << traj2 << std::endl;
-        std::cout << traj3 << std::endl;
+        // switch to difference kintroller using service
+        kintrol::SwitchKintroller srv;
+        srv.request.kintroller_name = "coordinated_kintroller";
+        rob1_switch_kintroller_client.call(srv);
+        rob2_switch_kintroller_client.call(srv);
+        rob3_switch_kintroller_client.call(srv);
+
+        ac1.sendGoal(traj1);
+        ac2.sendGoal(traj2);
+        ac3.sendGoal(traj3);
+
+        ac1.waitForResult();
+        ac2.waitForResult();
+        ac3.waitForResult();
+
+        // =================== Normal Trajectories ========================
+        Eigen::Isometry3d rob1_eef_pose_after = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB1_END_EFFECTOR);
+        Eigen::Isometry3d rob2_eef_pose_after = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB2_END_EFFECTOR);
+        Eigen::Isometry3d rob3_eef_pose_after = hydra_move_group_interface_.getCurrentState()->getFrameTransform(ROB3_END_EFFECTOR);
+        const auto& world_to_base2 = hydra_move_group_interface_.getCurrentState()->getFrameTransform(BASE_FRAME);
+
+        rob1_eef_pose_after = world_to_base2.inverse() * rob1_eef_pose_after;
+        rob2_eef_pose_after = world_to_base2.inverse() * rob2_eef_pose_after;
+        rob3_eef_pose_after = world_to_base2.inverse() * rob3_eef_pose_after;
+
+        Eigen::Isometry3d rob1_eef_pose_final = world_to_base2.inverse() * rob1_eef_pose_world;
+        Eigen::Isometry3d rob2_eef_pose_final = world_to_base2.inverse() * rob2_eef_pose_world;
+        Eigen::Isometry3d rob3_eef_pose_final = world_to_base2.inverse() * rob3_eef_pose_world;
+        
+        // robot 1
+        tf::poseEigenToMsg(rob1_eef_pose_after, r1p1);
+        tf::poseEigenToMsg(rob1_eef_pose_final, r1p2);
+
+        // robot 2
+        tf::poseEigenToMsg(rob2_eef_pose_after, r2p1);
+        tf::poseEigenToMsg(rob2_eef_pose_final, r2p2);
+
+        // robot 3
+        tf::poseEigenToMsg(rob3_eef_pose_after, r3p1);
+        tf::poseEigenToMsg(rob3_eef_pose_final, r3p2);
+
+        traj1.path.poses = {r1p1, r1p2};
+        traj2.path.poses = {r2p1, r2p2};
+        traj3.path.poses = {r3p1, r3p2};
+
+        // switch to difference kintroller using service
+        srv.request.kintroller_name = "kintroller";
+        rob1_switch_kintroller_client.call(srv);
+        rob2_switch_kintroller_client.call(srv);
+        rob3_switch_kintroller_client.call(srv);
 
         ac1.sendGoal(traj1);
         ac2.sendGoal(traj2);

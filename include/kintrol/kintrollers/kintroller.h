@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rosparam_shortcuts/rosparam_shortcuts.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit_msgs/CartesianTrajectoryPoint.h>
 #include <std_msgs/Float64MultiArray.h>
@@ -8,8 +9,6 @@
 #include <kintrol/kinematic_utilities.h>
 
 namespace kintrol
-{
-namespace kintrollers
 {
 typedef moveit_msgs::CartesianTrajectoryPoint Setpoint;
 
@@ -70,5 +69,4 @@ private:
     std::vector<double> positioner_cmd_;
 };
 
-} // namespace kintrollers
 } // namespace kintrol

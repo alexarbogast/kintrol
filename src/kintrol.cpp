@@ -35,11 +35,7 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
     joint_model_group_ = current_state_->getJointModelGroup(parameters_.joint_model_group);
     n_variables_ = joint_model_group_->getVariableCount();
 
-    //getKinematicChain(current_state_->getRobotModel(), 
-    //                  parameters_.pose_frame,
-    //                  parameters_.end_effector,
-    //                  kinematic_chain_);
-
+    // build kintroller map
     registerKintrollers();
     setIdleSetpoint();
 
@@ -110,12 +106,23 @@ bool Kintrol::registerKintrollers()
         kintrol::KinematicChain kc;
         getKinematicChain(robot_model, pose_frame, parameters_.end_effector, kc);
 
-        if (type == KintrollerType::KINTROLLER) {
-            kintroller_map_[name] = std::make_shared<kintrollers::Kintroller>(name, parameters_, kc);
-        }
-        else if (type == KintrollerType::COORDINATED_KINTROLLER) {
+        if (type == KintrollerType::KINTROLLER) 
+        {
             kintroller_map_[name] = 
-                std::make_shared<kintrollers::CoordinatedKintroller>(name, parameters_, kc);
+                std::make_shared<Kintroller>(name, parameters_, kc);
+        }
+        else if (type == KintrollerType::COORDINATED_KINTROLLER) 
+        {
+            kintroller_map_[name] = 
+                std::make_shared<CoordinatedKintroller>(name, parameters_, kc);
+        }
+        else if (type == KintrollerType::POSITIONER_KINTROLLER) 
+        {
+            std::shared_ptr<PositionerKintroller> kintroller = 
+                std::make_shared<PositionerKintroller>(name, parameters_, kc);
+            
+            kintroller->initializeBaseFrames(robot_model);
+            kintroller_map_[name] = kintroller; 
         }
     }
 
@@ -142,23 +149,6 @@ void Kintrol::setIdleSetpoint()
     setpoint_.point.velocity.angular.x = 0.0;
     setpoint_.point.velocity.angular.y = 0.0;
     setpoint_.point.velocity.angular.z = 0.0;
-}
-
-void Kintrol::extractPosition(Eigen::VectorXd& pose)
-{
-    pose << setpoint_.point.pose.position.x,
-            setpoint_.point.pose.position.y,
-            setpoint_.point.pose.position.z;
-}
-
-void Kintrol::extractVelocity(Eigen::VectorXd& vel)
-{
-    vel << setpoint_.point.velocity.linear.x, 
-           setpoint_.point.velocity.linear.y,
-           setpoint_.point.velocity.linear.z,
-           setpoint_.point.velocity.angular.x,
-           setpoint_.point.velocity.angular.y,
-           setpoint_.point.velocity.angular.z;
 }
 
 /* Callbacks */
