@@ -24,7 +24,7 @@ public:
     inline const std::string& getPoseFrame() const { return pose_frame_; };
 
 protected:
-    void extractPosition(const Setpoint& setpoint, Eigen::VectorXd& position);
+    void extractPosition(const Setpoint& setpoint, Eigen::Isometry3d& position);
     void extractVelocity(const Setpoint& setpoint, Eigen::VectorXd& velocity);
 protected:
     std::string name_;

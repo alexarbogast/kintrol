@@ -5,4 +5,4 @@ include_directories(
 )
 
 add_executable(kintrol_test src/kintrol_test.cpp)
-target_link_libraries(kintrol_test kintroller_manager ${catkin_LIBRARIES})
+target_link_libraries(kintrol_test kintrol ${catkin_LIBRARIES})

@@ -5,8 +5,8 @@ robot1:
     joint_model_group: "rob1_planning_group"
     end_effector: "rob1_typhoon_extruder"
     control_freq: 250
-    prop_gain: 0.1
-    ros_queue_size: 2
+    prop_gain: 10.0
+    ros_queue_size: 1
 
     kintroller_names: ["kintroller", "coordinated_kintroller"]
 
@@ -21,8 +21,6 @@ robot1:
       positioner_command_topic: "/positioner_joint_velocity_controller/command"
       constant_orient: true
 
-
-
 robot2:
   kintrol_server:
     command_topic: "/robot2_joint_velocity_controller/command"
@@ -30,8 +28,8 @@ robot2:
     joint_model_group: "rob2_planning_group"
     end_effector: "rob2_typhoon_extruder"
     control_freq: 250
-    prop_gain: 0.1
-    ros_queue_size: 2
+    prop_gain: 10.0
+    ros_queue_size: 1
 
     kintroller_names: ["kintroller", "coordinated_kintroller"]
 
@@ -53,8 +51,8 @@ robot3:
     joint_model_group: "rob3_planning_group"
     end_effector: "rob3_typhoon_extruder"
     control_freq: 250
-    prop_gain: 0.1
-    ros_queue_size: 2
+    prop_gain: 10.0
+    ros_queue_size: 1
 
     kintroller_names: ["kintroller", "coordinated_kintroller"]
 
@@ -77,7 +75,7 @@ positioner:
     end_effector: "positioner"
     control_freq: 100
     prop_gain: 0.1
-    ros_queue_size: 2
+    ros_queue_size: 1
 
     kintroller_names: ["positioner_kintroller"]
 

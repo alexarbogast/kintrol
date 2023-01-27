@@ -51,7 +51,7 @@ void PositionerKintroller::update(const Setpoint& setpoint,
                                  robot_state::RobotStatePtr& robot_state,
                                  Eigen::VectorXd& cmd_out) 
 {
-    static double K = 2.0;
+    static double K = 5.0;
 
     double eef_error = 0.0;
     for (auto& unit : coord_unit_contexts_)
@@ -67,6 +67,10 @@ void PositionerKintroller::update(const Setpoint& setpoint,
         Eigen::Vector3d base_frame_trans = base_frame.translation() / base_frame.translation().norm(); 
 
         double error = eef_frame_trans.cross(base_frame_trans).z();
+
+        // scale by distance from origin
+        //error *= (eef_frame.translation() - base_frame.translation()).norm() / 0.3;
+
         eef_error += error;
     }
 
@@ -78,6 +82,9 @@ void PositionerKintroller::update(const Setpoint& setpoint,
     // low-pass filter output
     output = filter_.update(output);
     
+    // TEMPORARYYYYYYYYYYYYYYYYYYYYYYYYYYYy
+    //output = 0.0;
+
     Eigen::VectorXd output_vec(n_vars_);
     output_vec << output;
     cmd_out = output_vec;

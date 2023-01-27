@@ -1,4 +1,5 @@
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
+#include <eigen_conversions/eigen_msg.h>
 #include "kintrol/kintrollers/kintroller.h"
 
 const static std::string LOGNAME = "kintrol_server";
@@ -11,11 +12,9 @@ KintrollerBase::KintrollerBase(const std::string& name, const KintrolParameters&
     pose_frame_ = kinematic_chain_.start_link->getName();
 }
 
-void KintrollerBase::extractPosition(const Setpoint& setpoint, Eigen::VectorXd& position)
+void KintrollerBase::extractPosition(const Setpoint& setpoint, Eigen::Isometry3d& position)
 {
-    position << setpoint.point.pose.position.x,
-                setpoint.point.pose.position.y,
-                setpoint.point.pose.position.z;
+    tf::poseMsgToEigen(setpoint.point.pose, position);
 }
 
 void KintrollerBase::extractVelocity(const Setpoint& setpoint, Eigen::VectorXd& velocity)
@@ -39,17 +38,26 @@ void Kintroller::update(const Setpoint& setpoint,
 {
     Eigen::Isometry3d pose_frame = robot_state->getFrameTransform(pose_frame_);
     Eigen::Isometry3d eef_frame = robot_state->getFrameTransform(parameters_.end_effector);
-    eef_frame = pose_frame.inverse() * eef_frame;
+    Eigen::Isometry3d eef_frame_base = pose_frame.inverse() * eef_frame;
 
-    Eigen::VectorXd pose(3);
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     Eigen::VectorXd vel(6);
     extractPosition(setpoint, pose);
     extractVelocity(setpoint, vel);
 
-    auto pose_error = parameters_.prop_gain * (pose - eef_frame.translation());
+    auto pose_error = parameters_.prop_gain * (pose.translation() - eef_frame_base.translation());
     vel[0] += pose_error.x();
     vel[1] += pose_error.y();
     vel[2] += pose_error.z();
+
+    Eigen::Quaterniond pose_quat(pose.linear());
+    Eigen::Quaterniond eef_quat(eef_frame_base.linear());
+    static double Ko = 1.0;
+
+    auto orient_error = pose_quat * eef_quat.inverse();
+    vel[3] += Ko * orient_error.x();
+    vel[4] += Ko * orient_error.y();
+    vel[5] += Ko * orient_error.z();
 
     Eigen::MatrixXd jacobian;
     getJacobian(robot_state, kinematic_chain_, jacobian);
@@ -85,17 +93,26 @@ void CoordinatedKintroller::update(const Setpoint& setpoint,
 {
     Eigen::Isometry3d pose_frame = robot_state->getFrameTransform(pose_frame_);
     Eigen::Isometry3d eef_frame = robot_state->getFrameTransform(parameters_.end_effector);
-    eef_frame = pose_frame.inverse() * eef_frame;
+    Eigen::Isometry3d eef_frame_base = pose_frame.inverse() * eef_frame;
 
-    Eigen::VectorXd pose(3);
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     Eigen::VectorXd vel(6);
     extractPosition(setpoint, pose);
     extractVelocity(setpoint, vel);
 
-    auto pose_error = parameters_.prop_gain * (pose - eef_frame.translation());
+    auto pose_error = parameters_.prop_gain * (pose.translation() - eef_frame_base.translation());
     vel[0] += pose_error.x();
     vel[1] += pose_error.y();
     vel[2] += pose_error.z();
+
+    Eigen::Quaterniond pose_quat(pose.linear());
+    Eigen::Quaterniond eef_quat(eef_frame.linear());
+    static double Ko = 1.0;
+
+    auto orient_error = pose_quat * eef_quat.inverse();
+    vel[3] += Ko * orient_error.x();
+    vel[4] += Ko * orient_error.y();
+    vel[5] += Ko * orient_error.z();
 
     // find jacobian of combined robot + positioner
     Eigen::MatrixXd jacobian;
@@ -118,7 +135,7 @@ void CoordinatedKintroller::update(const Setpoint& setpoint,
     Eigen::MatrixXd rob_jac_inv = pseudoInverse(rob_jac);
 
     // why is this a plus
-    cmd_out = rob_jac_inv * (vel + (pos_jac * pos_cmd));
+    cmd_out = rob_jac_inv * (vel - (pos_jac * pos_cmd));
 }
 
 void CoordinatedKintroller::positionerCmdCB(const std_msgs::Float64MultiArrayConstPtr& msg)

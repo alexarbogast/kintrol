@@ -143,6 +143,12 @@ void Kintrol::setIdleSetpoint()
     setpoint_.point.pose.position.y = pose_eef.translation().y();
     setpoint_.point.pose.position.z = pose_eef.translation().z();
 
+    Eigen::Quaterniond orient(eef_frame.linear());
+    setpoint_.point.pose.orientation.w = orient.w();
+    setpoint_.point.pose.orientation.x = orient.x();
+    setpoint_.point.pose.orientation.y = orient.y();
+    setpoint_.point.pose.orientation.z = orient.z();
+
     setpoint_.point.velocity.linear.x = 0.0;
     setpoint_.point.velocity.linear.y = 0.0;
     setpoint_.point.velocity.linear.z = 0.0;
