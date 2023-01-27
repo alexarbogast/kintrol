@@ -8,6 +8,7 @@
 #include "kintrol/kintrollers/kintroller.h"
 #include "kintrol/kintrollers/positioner_kintroller.h"
 #include "kintrol/SwitchKintroller.h"
+#include "kintrol/SetIdleSetpoint.h"
 
 namespace kintrol
 {
@@ -21,6 +22,8 @@ private:
     void twistStampedCB(const moveit_msgs::CartesianTrajectoryPointConstPtr& msg);
     bool switchKintrollerService(SwitchKintroller::Request &req,
                                  SwitchKintroller::Response &res);
+    bool setIdleSetpointService(SetIdleSetpoint::Request &req,
+                                SetIdleSetpoint::Response &res);
 
     bool readParameters();
     bool registerKintrollers();
@@ -36,6 +39,7 @@ private:
     ros::Subscriber setpoint_sub_;
 
     ros::ServiceServer switch_kintroller_service_;
+    ros::ServiceServer idle_setpoint_service_;
 
     planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
     moveit::core::RobotStatePtr current_state_;

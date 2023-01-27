@@ -8,22 +8,63 @@
 #include "kintrol/TrajectoryExecutionAction.h"
 
 static const std::string ACTION_NAME = "trajectory_execution_action";
-static double TRAVEL_VELOCITY = 50.0 / 1000.0; // m/s
+static double TRAVEL_VELOCITY = 100.0 / 1000.0; // m/s
 
 static double V_MAX = 100.0 / 1000.0; // m/s
-static double A_MAX = 200.0 / 1000.0; // m/s^2
-static double J_MAX = 1000.0 / 1000.0; // m/s^3
+static double A_MAX = 300.0 / 1000.0; // m/s^2
+static double J_MAX = 2000.0 / 1000.0; // m/s^3
 
 // temporary class for time-parameterization of smooth s_curve trajectory
 class ScurveTrajectory
 {
+/*
+    Mathematics for Real-Time S-Curve Profile Generator
+    (Marian BLEJAN, Robert BLEJAN)
+*/
 public:
     ScurveTrajectory(double s, double v_max, double a_max, double j_max)
         : s_(s), v_max_(v_max), a_max_(a_max), j_max_(j_max) 
     {
-        tj = a_max / j_max;
-        ta = v_max / a_max;
-        tv = s / v_max;
+        double va = a_max*a_max / j_max;
+        double sa = 2 * pow(a_max, 3) / (j_max * j_max);
+        double sv = 2 * v_max * sqrt(v_max / j_max);
+
+        double tj, ta, tv;
+
+        if (v_max < va && s > sa) {
+            tj = sqrt(v_max / j_max);
+            ta = tj;
+            tv = s / v_max;
+        }
+        else if (v_max > va && s < sa) {
+            tj = pow(s / (2*j_max), 1/3);
+            ta = tj;
+            tv = 2 * tj;
+        }
+        else if (v_max < va && s < sa) {
+            if (s >= sv) {
+                tj = sqrt(v_max / j_max);
+                ta = tj;
+                tv = s / v_max;
+            }
+            else {
+                tj = pow(s / (2*j_max), 1/3);
+                ta = tj;
+                tv = 2 * tj;
+            }
+        }
+        else { // v_max > va && s > sa
+            if (s >= sv) {
+                tj = a_max / j_max;
+                ta = v_max / a_max;
+                tv = s / v_max;
+            }
+            else {
+                tj = a_max / j_max;
+                ta = 0.5 * (sqrt((4*s*(j_max*j_max)+pow(a_max, 3))/(a_max*(j_max*j_max))) - a_max/j_max);
+                tv = ta + tj;
+            }
+        }
 
         tt[0] = tj;
         tt[1] = ta;

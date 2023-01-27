@@ -41,6 +41,7 @@ Kintrol::Kintrol(ros::NodeHandle& nh, const planning_scene_monitor::PlanningScen
 
     // start services
     switch_kintroller_service_ = pnh_.advertiseService("switch_kintrollers", &Kintrol::switchKintrollerService, this);
+    idle_setpoint_service_ = pnh_.advertiseService("set_idle_setpoint", &Kintrol::setIdleSetpointService, this);
 
     // publish command signal for ros control
     command_pub_= nh_.advertise<std_msgs::Float64MultiArray>(parameters_.command_topic, parameters_.ros_queue_size);
@@ -176,6 +177,14 @@ bool Kintrol::switchKintrollerService(SwitchKintroller::Request &req,
         ROS_ERROR_STREAM("Failed to switch to kintroller: " << req.kintroller_name);
         return false;
     }
+}
+
+bool Kintrol::setIdleSetpointService(SetIdleSetpoint::Request &req,
+                                     SetIdleSetpoint::Response &res)
+{
+    setpoint_ = req.setpoint;
+    res.success = true;
+    return true;
 }
 
 } // namespace kintrol

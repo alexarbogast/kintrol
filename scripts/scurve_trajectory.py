@@ -5,21 +5,55 @@ THEME = "LIGHT"
 
 if THEME == "DARK":
     plt.style.use('dark_background')
-plt.rcParams.update({'font.size': 22})
+#plt.rcParams.update({'font.size': 22})
 
 # Define the length of the path
-s = 50
+s = 300
 
 # Define the maximum velocity, acceleration, and jerk values
 v_max = 100
-a_max = 200
-j_max = 1000
+a_max = 300
+j_max = 2000
+
+# find va, sa, sv
+va = a_max**2 / j_max
+sa = 2 * a_max**3 / j_max**2
+sv = 2 * v_max * np.sqrt(v_max / j_max)
+
+if v_max < va and s > sa:
+    print("fig. 5.A.")
+    tj = np.sqrt(v_max / j_max)
+    ta = tj
+    tv = s / v_max
+elif v_max > va and s < sa:
+    print("fig 5.B")
+    tj = (s / (2 * j_max))**(1/3)
+    ta = tj
+    tv = 2 * tj
+elif v_max < va and s < sa:
+    if s >= sv:
+        print("fig 5.C.1")
+        tj = np.sqrt(v_max / j_max)
+        ta = tj
+        tv = s / v_max
+    else:
+        print("fig 5.C.2")
+        tj = (s / (2 * j_max))**(1/3)
+        ta = tj
+        tv = 2 * tj
+elif v_max > va and s > sa:
+    if s >= sv:
+        print("fig 5.D.1")
+        tj = a_max / j_max
+        ta = v_max / a_max
+        tv = s / v_max
+    else:
+        print("fig 5.D.2")
+        tj = a_max / j_max
+        ta = 0.5 * (np.sqrt((4*s*(j_max**2)+a_max**3)/(a_max*(j_max**2))) - a_max/j_max)
+        tv = ta + tj
 
 # Values of time corresponding to movement phases
-tj = a_max / j_max
-ta = v_max / a_max
-tv = s / v_max
-
 t1 = tj
 t2 = ta
 t3 = tj + ta

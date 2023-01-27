@@ -135,7 +135,7 @@ void CoordinatedKintroller::update(const Setpoint& setpoint,
     Eigen::MatrixXd rob_jac_inv = pseudoInverse(rob_jac);
 
     // why is this a plus
-    cmd_out = rob_jac_inv * (vel - (pos_jac * pos_cmd));
+    cmd_out = rob_jac_inv * (vel + (pos_jac * pos_cmd));
 }
 
 void CoordinatedKintroller::positionerCmdCB(const std_msgs::Float64MultiArrayConstPtr& msg)

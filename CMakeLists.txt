@@ -15,7 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_service_files(
     DIRECTORY srv
-    FILES SwitchKintroller.srv
+    FILES 
+        SwitchKintroller.srv
+        SetIdleSetpoint.srv
 )
 
 add_action_files(
@@ -27,6 +29,7 @@ generate_messages(
   DEPENDENCIES 
     actionlib_msgs
     geometry_msgs
+    moveit_msgs
     std_msgs
 )
 
