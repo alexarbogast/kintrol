@@ -81,9 +81,6 @@ void PositionerKintroller::update(const Setpoint& setpoint,
 
     // low-pass filter output
     output = filter_.update(output);
-    
-    // TEMPORARYYYYYYYYYYYYYYYYYYYYYYYYYYYy
-    //output = 0.0;
 
     Eigen::VectorXd output_vec(n_vars_);
     output_vec << output;

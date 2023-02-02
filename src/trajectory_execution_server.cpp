@@ -27,7 +27,6 @@ public:
     {
         double va = a_max*a_max / j_max;
         double sa = 2 * pow(a_max, 3) / (j_max * j_max);
-        double sv = 2 * v_max * sqrt(v_max / j_max);
 
         double tj, ta, tv;
 
@@ -42,6 +41,7 @@ public:
             tv = 2 * tj;
         }
         else if (v_max < va && s < sa) {
+            double sv = 2 * v_max * sqrt(v_max / j_max);
             if (s >= sv) {
                 tj = sqrt(v_max / j_max);
                 ta = tj;
@@ -54,6 +54,7 @@ public:
             }
         }
         else { // v_max > va && s > sa
+            double sv = v_max * (v_max/a_max + a_max/j_max);
             if (s >= sv) {
                 tj = a_max / j_max;
                 ta = v_max / a_max;
@@ -327,7 +328,6 @@ private:
             if (segment_elapsed > traj.get_duration())
             {
                 ++current_segment;
-                
                 if (current_segment == path.end())
                     continue;
 
