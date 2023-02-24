@@ -26,6 +26,7 @@ add_message_files(
     DIRECTORY msg
     FILES
         PosVelSetpoint.msg
+        KinematicLimits.msg
 )
 
 add_action_files(

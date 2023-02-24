@@ -9,10 +9,6 @@
 #include <kintrol/TrajectoryExecutionAction.h>
 #include <kintrol/PosVelSetpoint.h>
 
-// expose these in message
-static double V_MAX = 200.0 / 1000.0; // m/s
-static double A_MAX = 1000.0 / 1000.0; // m/s^2
-static double J_MAX = 5000.0 / 1000.0; // m/s^3
 
 static const std::string ACTION_NAME = "trajectory_execution_action";
 
@@ -88,9 +84,9 @@ private:
         ruckig::InputParameter<DOFs> input;
         ruckig::OutputParameter<DOFs> output;
 
-        input.max_velocity = {V_MAX};
-        input.max_acceleration = {A_MAX};
-        input.max_jerk = {J_MAX};
+        input.max_velocity = {goal->limits.v_max};
+        input.max_acceleration = {goal->limits.a_max};
+        input.max_jerk = {goal->limits.j_max};
 
         // run control loop
         kintrol::PosVelSetpoint setpoint;

@@ -3,6 +3,10 @@ import actionlib
 from geometry_msgs.msg import PoseArray, Pose
 from kintrol.msg import TrajectoryExecutionAction, TrajectoryExecutionGoal 
 
+V_MAX = 200.0 / 1000.0;  # m/s
+A_MAX = 700.0 / 1000.0; # m/s^2
+J_MAX = 3000.0 / 1000.0; # m/s^3
+
 def trajectory_execution_client():
     client = actionlib.SimpleActionClient('/robot1/trajectory_execution_action', TrajectoryExecutionAction)
     client.wait_for_server()
@@ -49,6 +53,9 @@ def trajectory_execution_client():
 
     goal = TrajectoryExecutionGoal()
     goal.path = test_path
+    goal.limits.v_max = V_MAX
+    goal.limits.a_max = A_MAX
+    goal.limits.j_max = J_MAX
 
     client.send_goal(goal)
     client.wait_for_result()
