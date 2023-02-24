@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     moveit_msgs
     std_msgs
+    genmsg
+    rospy
 )
 
 add_service_files(
@@ -18,6 +20,12 @@ add_service_files(
     FILES 
         SwitchKintroller.srv
         SetIdleSetpoint.srv
+)
+
+add_message_files(
+    DIRECTORY msg
+    FILES
+        PosVelSetpoint.msg
 )
 
 add_action_files(
@@ -44,16 +52,22 @@ catkin_package(
         eigen_conversions
         actionlib
         actionlib_msgs
-        message_generation
         message_runtime
         geometry_msgs
         moveit_msgs
         std_msgs
+        rospy
 )
 
 include_directories(include)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS})
+include_directories(${ruckig_ros_INCLUDE_DIRS})
 
+# build minimal version of ruckig
+add_subdirectory(third_party/ruckig)
+add_subdirectory(kintrol_test)
+
+# build kintrol
 add_library(kintrol 
     src/kintrol.cpp
     src/kintroller_manager.cpp
@@ -71,7 +85,10 @@ add_executable(trajectory_execution_server src/trajectory_execution_server.cpp)
 target_link_libraries(trajectory_execution_server ${catkin_LIBRARIES})
 add_dependencies(trajectory_execution_server ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-add_subdirectory(kintrol_test)
+add_executable(trajectory_execution_serverV2 src/trajectory_execution_serverV2.cpp)
+target_link_libraries(trajectory_execution_serverV2 ruckig_ros ${catkin_LIBRARIES})
+add_dependencies(trajectory_execution_serverV2 ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_compile_features(trajectory_execution_serverV2 PUBLIC cxx_std_17)
 
 # TEMPORARY
 add_executable(my_test src/my_test.cpp)

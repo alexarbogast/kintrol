@@ -9,7 +9,7 @@ public:
     LowPassFilter(double cutoff, double dt);
 
     double update(double input);
-    double reconfigureFilter(double cutoff, double dt);
+    void reconfigureFilter(double cutoff, double dt);
 private:
     double output_;
     double e_pow_;

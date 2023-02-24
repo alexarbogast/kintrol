@@ -1,0 +1,10 @@
+<launch> 
+    <!-- kintrol parameters -->
+    <rosparam file="$(find kintrol)/kintrol_test/config/trajectory_execution.yaml" command="load"/>
+
+    <!-- robot 1 -->
+    <group ns="robot1">
+        <node name="trajectory_execution" pkg="kintrol" type="trajectory_execution_serverV2" output="screen"/>
+        <node name="trajectory_execution_test" pkg="kintrol" type="trajectory_test.py" output="screen"/>
+    </group>
+</launch>

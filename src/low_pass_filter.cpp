@@ -19,7 +19,7 @@ double LowPassFilter::update(double input)
     return output_ += (input - output_) * e_pow_;
 }
 
-double LowPassFilter::reconfigureFilter(double cutoff, double dt)
+void LowPassFilter::reconfigureFilter(double cutoff, double dt)
 {
     e_pow_ = 1 - exp(-dt * 2 * M_PI * cutoff);
 }

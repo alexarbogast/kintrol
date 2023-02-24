@@ -4,5 +4,9 @@ include_directories(
   include/
 )
 
+catkin_install_python(PROGRAMS scripts/trajectory_test.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 add_executable(kintrol_test src/kintrol_test.cpp)
 target_link_libraries(kintrol_test kintrol ${catkin_LIBRARIES})

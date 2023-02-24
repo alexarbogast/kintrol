@@ -1,0 +1,4 @@
+robot1:
+  setpoint_topic: "/cartesian_posvel_controller/command"
+  control_freq: 250
+  ros_queue_size: 1
