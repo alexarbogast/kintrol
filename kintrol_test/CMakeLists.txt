@@ -4,7 +4,9 @@ include_directories(
   include/
 )
 
-catkin_install_python(PROGRAMS scripts/trajectory_test.py
+catkin_install_python(PROGRAMS 
+  scripts/trajectory_test.py
+  scripts/multi_robot_trajectory_test.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

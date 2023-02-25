@@ -1,4 +1,5 @@
 robot1:
-  setpoint_topic: "/cartesian_posvel_controller/command"
+  setpoint_topic: "/task_priority_controller/command"
+  #setpoint_topic: "/cartesian_posvel_controller/command"
   control_freq: 250
   ros_queue_size: 1

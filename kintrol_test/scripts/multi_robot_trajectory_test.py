@@ -11,8 +11,12 @@ J_MAX = 3000.0 / 1000.0; # m/s^3
 BATCH = False
 
 def trajectory_execution_client():
-    client = actionlib.SimpleActionClient('/robot1/trajectory_execution_action', TrajectoryExecutionAction)
-    client.wait_for_server()
+    client1 = actionlib.SimpleActionClient('/robot1/trajectory_execution_action', TrajectoryExecutionAction)
+    client1.wait_for_server()
+    client2 = actionlib.SimpleActionClient('/robot2/trajectory_execution_action', TrajectoryExecutionAction)
+    client2.wait_for_server()
+    client3 = actionlib.SimpleActionClient('/robot3/trajectory_execution_action', TrajectoryExecutionAction)
+    client3.wait_for_server()
 
     # flange
     #start = np.array([0.6281204359253633, -1.150820145534631e-07, 0.507627954931471])
@@ -28,7 +32,7 @@ def trajectory_execution_client():
     set_pose(start, orient, start_pose)
     test_path.poses.append(start_pose)
 
-    width = 0.4
+    width = 0.3
     path = make_cube(start, width)
     for segment in path:
         pose = Pose()
@@ -44,8 +48,12 @@ def trajectory_execution_client():
     goal.limits.j_max = J_MAX
     goal.batch = BATCH
 
-    client.send_goal(goal)
-    client.wait_for_result()
+    client1.send_goal(goal)
+    client2.send_goal(goal)
+    client3.send_goal(goal)
+    client1.wait_for_result()
+    client2.wait_for_result()
+    client3.wait_for_result()
 
 def set_pose(position, orientation, pose: PoseArray):
     pose.position.x = position[0]

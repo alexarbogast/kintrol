@@ -1,6 +1,7 @@
 #goal definition
 geometry_msgs/PoseArray path
 kintrol/KinematicLimits limits
+bool batch
 ---
 #result definition
 ---

@@ -1,0 +1,14 @@
+robot1:
+  setpoint_topic: "/robot1_task_priority_controller/command"
+  control_freq: 250
+  ros_queue_size: 1
+
+robot2:
+  setpoint_topic: "/robot2_task_priority_controller/command"
+  control_freq: 250
+  ros_queue_size: 1
+
+robot3:
+  setpoint_topic: "/robot3_task_priority_controller/command"
+  control_freq: 250
+  ros_queue_size: 1
