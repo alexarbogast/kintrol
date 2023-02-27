@@ -15,12 +15,12 @@ def trajectory_execution_client():
     client.wait_for_server()
 
     # flange
-    #start = np.array([0.6281204359253633, -1.150820145534631e-07, 0.507627954931471])
-    #orient = np.array([0, 0, 0, 1])
+    start = np.array([0.6281204359253633, -1.150820145534631e-07, 0.507627954931471])
+    orient = np.array([0, 0, 0, 1])
     
     # typhoon extruder
-    start = np.array([0.7142504784757611, 1.0829474352021246e-07, 0.34862800753764744])
-    orient = np.array([0, 1, 0, 0])
+    #start = np.array([0.7142504784757611, 1.0829474352021246e-07, 0.34862800753764744])
+    #orient = np.array([0, 1, 0, 0])
 
     test_path = PoseArray()
 
@@ -28,8 +28,9 @@ def trajectory_execution_client():
     set_pose(start, orient, start_pose)
     test_path.poses.append(start_pose)
 
-    width = 0.4
-    path = make_cube(start, width)
+    #width = 0.4
+    #path = all_edges(start, width)
+    path = manipulability_example()
     for segment in path:
         pose = Pose()
         set_pose(segment, orient, pose)
@@ -55,16 +56,15 @@ def set_pose(position, orientation, pose: PoseArray):
     pose.orientation.x = orientation[1]
     pose.orientation.y = orientation[2]
     pose.orientation.z = orientation[3]
-    
-def make_cube(center, width):
-    w2 = width / 2
-    xmin = center[0] - w2
-    xmax = center[0] + w2
-    ymin = center[1] - w2
-    ymax = center[1] + w2
-    zmin = center[2] - w2
-    zmax = center[2] + w2
-    
+
+def make_rectangle(center, x, y, z):
+    xmin = center[0] - x / 2
+    xmax = center[0] + x / 2
+    ymin = center[1] - y / 2
+    ymax = center[1] + y / 2
+    zmin = center[2] - z / 2
+    zmax = center[2] + z / 2
+
     # x: (f)ront, (b)ack
     # y: (l)eft, (r)ight
     # z: (t)op, (d)own
@@ -77,9 +77,30 @@ def make_cube(center, width):
     bru = np.array([xmax, ymin, zmax])
     brd = np.array([xmax, ymin, zmin])
 
+    return (flu, fru, frd, fld, bld, blu, bru, brd)
+
+def make_cube(center, width):
+    return make_rectangle(center, width, width, width)
+
+def all_edges(center, width):
+    flu, fru, frd, fld, bld, blu, bru, brd = make_cube(center, width)
+
     path = [fru, flu, blu, bru, fru, frd, fru, flu,
             fld, bld, blu, flu, fld, frd, brd, bru,
             blu, bld, brd, bru]
+
+    return path
+
+def manipulability_example():
+    x = 0.9
+    y = 0.9
+    z = 0.6
+
+    floor_offset = 0.5
+    center = np.array([0, 0, z / 2 + floor_offset])
+
+    flu, fru, frd, fld, bld, blu, bru, brd = make_rectangle(center, x, y, z)
+    path = [blu, flu, fld, bld, blu, bru, brd, frd, fru, bru, brd, bld]
 
     return path
 
