@@ -4,10 +4,8 @@ import numpy as np
 from geometry_msgs.msg import PoseArray, Pose
 from kintrol.msg import TrajectoryExecutionAction, TrajectoryExecutionGoal
 
-from kintrol_test.scripts.trajectory_test import set_pose, all_edges, make_rectangle
-
-V_MAX = 400.0 / 1000.0;  # m/s
-A_MAX = 700.0 / 1000.0; # m/s^2
+V_MAX = 600.0 / 1000.0;  # m/s
+A_MAX = 1000.0 / 1000.0;  # m/s^2
 J_MAX = 3000.0 / 1000.0; # m/s^3
 
 BATCH = False
@@ -57,6 +55,49 @@ def trajectory_execution_client():
     client1.wait_for_result()
     client2.wait_for_result()
     client3.wait_for_result()
+
+def set_pose(position, orientation, pose: PoseArray):
+    pose.position.x = position[0]
+    pose.position.y = position[1]
+    pose.position.z = position[2]
+    pose.orientation.w = orientation[0]
+    pose.orientation.x = orientation[1]
+    pose.orientation.y = orientation[2]
+    pose.orientation.z = orientation[3]
+
+def make_rectangle(center, x, y, z):
+    xmin = center[0] - x / 2
+    xmax = center[0] + x / 2
+    ymin = center[1] - y / 2
+    ymax = center[1] + y / 2
+    zmin = center[2] - z / 2
+    zmax = center[2] + z / 2
+
+    # x: (f)ront, (b)ack
+    # y: (l)eft, (r)ight
+    # z: (t)op, (d)own
+    flu = np.array([xmin, ymax, zmax])
+    fru = np.array([xmin, ymin, zmax])
+    frd = np.array([xmin, ymin, zmin])
+    fld = np.array([xmin, ymax, zmin])
+    bld = np.array([xmax, ymax, zmin])
+    blu = np.array([xmax, ymax, zmax])
+    bru = np.array([xmax, ymin, zmax])
+    brd = np.array([xmax, ymin, zmin])
+
+    return (flu, fru, frd, fld, bld, blu, bru, brd)
+
+def make_cube(center, width):
+    return make_rectangle(center, width, width, width)
+
+def all_edges(center, width):
+    flu, fru, frd, fld, bld, blu, bru, brd = make_cube(center, width)
+
+    path = [fru, flu, blu, bru, fru, frd, fru, flu,
+            fld, bld, blu, flu, fld, frd, brd, bru,
+            blu, bld, brd, bru]
+
+    return path
 
 def manipulability_example():
     x = 0.9
