@@ -21,20 +21,20 @@ void poseToSetpoint(const Eigen::Vector3d& pos,
 
     setpoint.pose.orientation.w = orient.w();
     setpoint.pose.orientation.x = orient.x();
-    setpoint.pose.orientation.y = orient.y();
+    setpoint.pose.orientation.y = orient.y(); 
     setpoint.pose.orientation.z = orient.z();
 }
 
 void velocityToSetpoint(const Eigen::Vector3d& linear,
                         const Eigen::Vector3d& angular,
                         kintrol::PosVelSetpoint& setpoint) {
-    setpoint.twist.twist.linear.x = linear.x();
-    setpoint.twist.twist.linear.y = linear.y();
-    setpoint.twist.twist.linear.z = linear.z();
+    setpoint.twist.linear.x = linear.x();
+    setpoint.twist.linear.y = linear.y();
+    setpoint.twist.linear.z = linear.z();
 
-    setpoint.twist.twist.angular.x = angular.x();
-    setpoint.twist.twist.angular.y = angular.y();
-    setpoint.twist.twist.angular.z = angular.z();
+    setpoint.twist.angular.x = angular.x();
+    setpoint.twist.angular.y = angular.y();
+    setpoint.twist.angular.z = angular.z();
 }
 
 class TrajectoryExecutionAction
@@ -200,13 +200,13 @@ private:
             setpoint.pose.orientation.y = orient.y();
             setpoint.pose.orientation.z = orient.z();
             
-            setpoint.twist.twist.linear.x = v[0];
-            setpoint.twist.twist.linear.y = v[1];
-            setpoint.twist.twist.linear.z = v[2];
+            setpoint.twist.linear.x = v[0];
+            setpoint.twist.linear.y = v[1];
+            setpoint.twist.linear.z = v[2];
 
-            setpoint.twist.twist.angular.x = 0;
-            setpoint.twist.twist.angular.y = 0;
-            setpoint.twist.twist.angular.z = 0;
+            setpoint.twist.angular.x = 0;
+            setpoint.twist.angular.y = 0;
+            setpoint.twist.angular.z = 0;
 
             output.pass_to_input(input);
             setpoint_pub_.publish(setpoint);
