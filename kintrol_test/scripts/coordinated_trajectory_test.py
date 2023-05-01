@@ -4,19 +4,34 @@ import numpy as np
 from geometry_msgs.msg import PoseArray, Pose
 from kintrol.msg import TrajectoryExecutionAction, TrajectoryExecutionGoal
 
-V_MAX = 400.0 / 1000.0;  # m/s
-A_MAX = 800.0 / 1000.0;  # m/s^2
+from hydra_controllers.srv import SwitchCoordination
+
+V_MAX = 100.0 / 1000.0;  # m/s
+A_MAX = 400.0 / 1000.0;  # m/s^2
 J_MAX = 1000.0 / 1000.0; # m/s^3
 
 BATCH = False
 
 def trajectory_execution_client():
-    client1 = actionlib.SimpleActionClient('/robot1/trajectory_execution_action', TrajectoryExecutionAction)
+    client1 = actionlib.SimpleActionClient('/robot1/trajectory_execution_action', 
+                                           TrajectoryExecutionAction)
     client1.wait_for_server()
-    client2 = actionlib.SimpleActionClient('/robot2/trajectory_execution_action', TrajectoryExecutionAction)
+    client2 = actionlib.SimpleActionClient('/robot2/trajectory_execution_action', 
+                                           TrajectoryExecutionAction)
     client2.wait_for_server()
-    client3 = actionlib.SimpleActionClient('/robot3/trajectory_execution_action', TrajectoryExecutionAction)
+    client3 = actionlib.SimpleActionClient('/robot3/trajectory_execution_action', 
+                                           TrajectoryExecutionAction)
     client3.wait_for_server()
+
+    rospy.wait_for_service('/hydra_controller/switch_coordination')
+    switch_coordination_client = rospy.ServiceProxy('/hydra_controller/switch_coordination',
+                                                     SwitchCoordination)
+    resp1 = switch_coordination_client(arm_id="rob1", coordinated=True)
+    resp2 = switch_coordination_client(arm_id="rob2", coordinated=True)
+    resp3 = switch_coordination_client(arm_id="rob3", coordinated=True)
+    if not (resp1.success and resp2.success and resp3.success):
+        print("Failed to switch to coordinated controller")
+        return False
     
     # TODO: wait for state message to find initial position
     # TODO: find start positions
@@ -35,8 +50,11 @@ def trajectory_execution_client():
     set_pose(start1, orient, start_pose1)
     test_path1.poses.append(start_pose1)
     width = 0.2
+    z = 0.00238
 
-    path = make_cube(np.array([0.25*np.cos(-2*np.pi/3), 0.25*np.sin(-2*np.pi/3), 0.3]), width, np.pi/3)
+    #path = make_cube(np.array([0.25*np.cos(-2*np.pi/3), 0.25*np.sin(-2*np.pi/3), 0.3]), width, np.pi/3)
+    #path = [np.array([-0.3, -0.3, 0.02]), np.array([-0.3, 0.3, 0.02]), np.array([0.3, 0.3, 0.02]), np.array([0.3, -0.3, 0.02]), np.array([-0.3, -0.3, 0.02])]
+    path = [np.array([-0.3236, -0.2351, z]), np.array([-0.1528, 0.0, z]), np.array([-0.3236, 0.2351, z]), np.array([-0.0472, 0.1453, z]), np.array([0.1236, 0.380, z]), np.array([0.1236, 0.09, z]), np.array([0.4, 0.0, z]), np.array([0.1236, -0.09, z]),  np.array([0.1236, -0.380, z]), np.array([-0.0472, -0.1453, z]), np.array([-0.3236, -0.2351, z])]
     for segment in path:
         pose = Pose()
         set_pose(segment, orient, pose)
@@ -44,19 +62,17 @@ def trajectory_execution_client():
 
     test_path1.poses.append(start_pose1)
 
-    goal1 = TrajectoryExecutionGoal()
+    goal1 = make_goal()
     goal1.path = test_path1
-    goal1.limits.v_max = V_MAX
-    goal1.limits.a_max = A_MAX
-    goal1.limits.j_max = J_MAX
-    goal1.batch = BATCH
 
     # ========= robot 2 path ==========
     start_pose2 = Pose()
     set_pose(start2, orient, start_pose2)
     test_path2.poses.append(start_pose2)
 
-    path = make_cube(np.array([0.25, 0.0, 0.3]), width)
+    #path = make_cube(np.array([0.25, 0.0, 0.3]), width)
+    #path = [np.array([0.275, -0.275, 0.02]), np.array([-0.275, -0.275, 0.02]), np.array([-0.275, 0.275, 0.02]), np.array([0.275, 0.275, 0.02]), np.array([0.275, -0.275, 0.02])]
+    path = [np.array([0.4, 0.0, z]), np.array([0.1236, -0.09, z]),  np.array([0.1236, -0.380, z]), np.array([-0.0472, -0.1453, z]), np.array([-0.3236, -0.2351, z]), np.array([-0.1528, 0.0, z]), np.array([-0.3236, 0.2351, z]), np.array([-0.0472, 0.1453, z]), np.array([0.1236, 0.380, z]), np.array([0.1236, 0.09, z]), np.array([0.4, 0.0, z])]
     for segment in path:
         pose = Pose()
         set_pose(segment, orient, pose)
@@ -64,19 +80,17 @@ def trajectory_execution_client():
 
     test_path2.poses.append(start_pose2)
 
-    goal2 = TrajectoryExecutionGoal()
+    goal2 = make_goal()
     goal2.path = test_path2
-    goal2.limits.v_max = V_MAX
-    goal2.limits.a_max = A_MAX
-    goal2.limits.j_max = J_MAX
-    goal2.batch = BATCH
 
     # ========= robot 3 path ==========
     start_pose3 = Pose()
     set_pose(start3, orient, start_pose3)
     test_path3.poses.append(start_pose3)
 
-    path = make_cube(np.array([0.25*np.cos(2*np.pi/3), 0.25*np.sin(2*np.pi/3), 0.3]), width, -np.pi/3)
+    #path = make_cube(np.array([0.25*np.cos(2*np.pi/3), 0.25*np.sin(2*np.pi/3), 0.3]), width, -np.pi/3)
+    #path = [np.array([-0.250, 0.250, 0.02]), np.array([0.250, 0.250, 0.02]), np.array([0.250, -0.250, 0.02]), np.array([-0.250, -0.250, 0.02]), np.array([-0.250, 0.250, 0.02])]
+    path = [np.array([-0.3236, 0.2351, z]), np.array([-0.0472, 0.1453, z]), np.array([0.1236, 0.380, z]), np.array([0.1236, 0.09, z]), np.array([0.4, 0.0, z]), np.array([0.1236, -0.09, z]),  np.array([0.1236, -0.380, z]), np.array([-0.0472, -0.1453, z]), np.array([-0.3236, -0.2351, z]), np.array([-0.1528, 0.0, z]), np.array([-0.3236, 0.2351, z])]
     for segment in path:
         pose = Pose()
         set_pose(segment, orient, pose)
@@ -84,12 +98,8 @@ def trajectory_execution_client():
 
     test_path3.poses.append(start_pose3)
 
-    goal3 = TrajectoryExecutionGoal()
+    goal3 = make_goal()
     goal3.path = test_path3
-    goal3.limits.v_max = V_MAX
-    goal3.limits.a_max = A_MAX
-    goal3.limits.j_max = J_MAX
-    goal3.batch = BATCH
 
     client1.send_goal(goal1)
     client2.send_goal(goal2)
@@ -142,6 +152,14 @@ def make_rectangle(center, x, y, z, z_rot=0.0):
 
 def make_cube(center, width, z_rot=0.0):
     return make_rectangle(center, width, width, width, z_rot)
+
+def make_goal():
+    goal = TrajectoryExecutionGoal()
+    goal.limits.v_max = V_MAX
+    goal.limits.a_max = A_MAX
+    goal.limits.j_max = J_MAX
+    goal.batch = BATCH
+    return goal
 
 
 if __name__ == "__main__":

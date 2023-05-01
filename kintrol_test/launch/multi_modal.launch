@@ -1,0 +1,19 @@
+<launch> 
+    <!-- kintrol parameters -->
+    <rosparam file="$(find kintrol)/kintrol_test/config/coordinated_traj.yaml" command="load"/>
+
+    <!-- robot 1 -->
+    <group ns="robot1">
+        <node name="robot1_trajectory_execution" pkg="kintrol" type="trajectory_execution_serverV2" output="screen"/>
+    </group>
+    <!-- robot 2 -->
+    <group ns="robot2">
+        <node name="robot2_trajectory_execution" pkg="kintrol" type="trajectory_execution_serverV2" output="screen"/>
+    </group>
+    <!-- robot 3 -->
+    <group ns="robot3">
+        <node name="robot3_trajectory_execution" pkg="kintrol" type="trajectory_execution_serverV2" output="screen"/>
+    </group>
+
+    <node name="multi_modal_test" pkg="kintrol" type="multi_modal_test.py" output="screen"/>
+</launch>

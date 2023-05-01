@@ -4,6 +4,8 @@ import numpy as np
 from geometry_msgs.msg import PoseArray, Pose
 from kintrol.msg import TrajectoryExecutionAction, TrajectoryExecutionGoal
 
+from hydra_controllers.srv import SwitchCoordination
+
 V_MAX = 600.0 / 1000.0;  # m/s
 A_MAX = 1000.0 / 1000.0;  # m/s^2
 J_MAX = 3000.0 / 1000.0; # m/s^3
@@ -17,6 +19,16 @@ def trajectory_execution_client():
     client2.wait_for_server()
     client3 = actionlib.SimpleActionClient('/robot3/trajectory_execution_action', TrajectoryExecutionAction)
     client3.wait_for_server()
+
+    rospy.wait_for_service('/hydra_controller/switch_coordination')
+    switch_coordination_client = rospy.ServiceProxy('/hydra_controller/switch_coordination',
+                                                     SwitchCoordination)
+    resp1 = switch_coordination_client(arm_id="rob1", coordinated=False)
+    resp2 = switch_coordination_client(arm_id="rob2", coordinated=False)
+    resp3 = switch_coordination_client(arm_id="rob3", coordinated=False)
+    if not (resp1.success and resp2.success and resp3.success):
+        print("Failed to switch to coordinated controller")
+        return False
 
     # flange
     #start = np.array([0.6281204359253633, -1.150820145534631e-07, 0.507627954931471])
